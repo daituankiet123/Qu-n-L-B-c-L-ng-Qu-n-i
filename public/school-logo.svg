@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- Definitions for text paths and filters -->
+  <defs>
+    <!-- Top arc path for text -->
+    <path id="top-arc" d="M 65 250 A 185 185 0 1 1 435 250" fill="none" />
+    <!-- Bottom arc path for text (counter-clockwise so text is upright) -->
+    <path id="bottom-arc" d="M 70 250 A 180 180 0 0 0 430 250" fill="none" />
+    
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+
+    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE066" />
+      <stop offset="50%" stop-color="#FFCC00" />
+      <stop offset="100%" stop-color="#E69500" />
+    </linearGradient>
+
+    <linearGradient id="blue-sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0369A1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Ring (Gold Border & Red Rim) -->
+  <circle cx="250" cy="250" r="240" fill="#DA251D" stroke="#FFE066" stroke-width="8" filter="url(#shadow)" />
+  <circle cx="250" cy="250" r="232" fill="none" stroke="#FFE066" stroke-width="2" />
+
+  <!-- Inner Blue Circle -->
+  <circle cx="250" cy="250" r="172" fill="url(#blue-sky)" stroke="#FFE066" stroke-width="5" />
+
+  <!-- Top Text: TỔNG CỤC HẬU CẦN - KỸ THUẬT -->
+  <text fill="#FFE066" font-family="'Be Vietnam Pro', Arial, sans-serif" font-weight="900" font-size="28" letter-spacing="2.5">
+    <textPath href="#top-arc" startOffset="50%" text-anchor="middle">
+      TỔNG CỤC HẬU CẦN - KỸ THUẬT
+    </textPath>
+  </text>
+
+  <!-- Bottom Text: TRƯỜNG CAO ĐẲNG HẬU CẦN 2 -->
+  <text fill="#FFE066" font-family="'Be Vietnam Pro', Arial, sans-serif" font-weight="900" font-size="26" letter-spacing="2">
+    <textPath href="#bottom-arc" startOffset="50%" text-anchor="middle">
+      TRƯỜNG CAO ĐẲNG HẬU CẦN 2
+    </textPath>
+  </text>
+
+  <!-- Left Golden Rice / Wheat Sheaf -->
+  <g transform="translate(48, 200) rotate(-15)">
+    <path d="M 5 0 Q 2 25 10 50 Q 5 75 15 100" stroke="#FFE066" stroke-width="3" fill="none"/>
+    <!-- Grains -->
+    <ellipse cx="2" cy="15" rx="5" ry="9" fill="#FFE066" transform="rotate(-30 2 15)"/>
+    <ellipse cx="14" cy="25" rx="5" ry="9" fill="#FFCC00" transform="rotate(30 14 25)"/>
+    <ellipse cx="5" cy="40" rx="5" ry="9" fill="#FFE066" transform="rotate(-30 5 40)"/>
+    <ellipse cx="16" cy="50" rx="5" ry="9" fill="#FFCC00" transform="rotate(30 16 50)"/>
+    <ellipse cx="7" cy="65" rx="5" ry="9" fill="#FFE066" transform="rotate(-30 7 65)"/>
+    <ellipse cx="18" cy="75" rx="5" ry="9" fill="#FFCC00" transform="rotate(30 18 75)"/>
+    <ellipse cx="10" cy="90" rx="5" ry="9" fill="#FFE066" transform="rotate(-30 10 90)"/>
+  </g>
+
+  <!-- Right Golden Rice / Wheat Sheaf -->
+  <g transform="translate(440, 200) scale(-1, 1) rotate(-15)">
+    <path d="M 5 0 Q 2 25 10 50 Q 5 75 15 100" stroke="#FFE066" stroke-width="3" fill="none"/>
+    <!-- Grains -->
+    <ellipse cx="2" cy="15" rx="5" ry="9" fill="#FFE066" transform="rotate(-30 2 15)"/>
+    <ellipse cx="14" cy="25" rx="5" ry="9" fill="#FFCC00" transform="rotate(30 14 25)"/>
+    <ellipse cx="5" cy="40" rx="5" ry="9" fill="#FFE066" transform="rotate(-30 5 40)"/>
+    <ellipse cx="16" cy="50" rx="5" ry="9" fill="#FFCC00" transform="rotate(30 16 50)"/>
+    <ellipse cx="7" cy="65" rx="5" ry="9" fill="#FFE066" transform="rotate(-30 7 65)"/>
+    <ellipse cx="18" cy="75" rx="5" ry="9" fill="#FFCC00" transform="rotate(30 18 75)"/>
+    <ellipse cx="10" cy="90" rx="5" ry="9" fill="#FFE066" transform="rotate(-30 10 90)"/>
+  </g>
+
+  <!-- Blue Cogwheel (Bánh răng kỹ thuật 30-8 1977) -->
+  <g transform="translate(250, 360)">
+    <!-- Cogwheel teeth -->
+    <circle cx="0" cy="0" r="54" fill="#1D4ED8" stroke="#0F172A" stroke-width="3"/>
+    <!-- Teeth nodes -->
+    <rect x="-10" y="-62" width="20" height="12" fill="#1D4ED8" stroke="#0F172A" stroke-width="2"/>
+    <rect x="-10" y="50" width="20" height="12" fill="#1D4ED8" stroke="#0F172A" stroke-width="2"/>
+    <rect x="-62" y="-10" width="12" height="20" fill="#1D4ED8" stroke="#0F172A" stroke-width="2"/>
+    <rect x="50" y="-10" width="12" height="20" fill="#1D4ED8" stroke="#0F172A" stroke-width="2"/>
+    <rect x="-46" y="-46" width="15" height="15" fill="#1D4ED8" stroke="#0F172A" stroke-width="2" transform="rotate(45 0 0)"/>
+    <rect x="31" y="-46" width="15" height="15" fill="#1D4ED8" stroke="#0F172A" stroke-width="2" transform="rotate(45 0 0)"/>
+    <rect x="-46" y="31" width="15" height="15" fill="#1D4ED8" stroke="#0F172A" stroke-width="2" transform="rotate(45 0 0)"/>
+    <rect x="31" y="31" width="15" height="15" fill="#1D4ED8" stroke="#0F172A" stroke-width="2" transform="rotate(45 0 0)"/>
+
+    <circle cx="0" cy="0" r="46" fill="#1E3A8A" stroke="#FFE066" stroke-width="2"/>
+    <text x="0" y="-6" fill="#FFE066" font-family="'Be Vietnam Pro', Arial, sans-serif" font-weight="900" font-size="19" text-anchor="middle">
+      30-8
+    </text>
+    <text x="0" y="18" fill="#FFE066" font-family="'Be Vietnam Pro', Arial, sans-serif" font-weight="900" font-size="19" text-anchor="middle">
+      1977
+    </text>
+  </g>
+
+  <!-- Open White Book (Trang sách mở ra) -->
+  <g transform="translate(250, 240)">
+    <!-- Book pages background -->
+    <path d="M 0 60 Q -65 80 -125 40 L -110 -105 Q -55 -75 0 -95 Q 55 -75 110 -105 L 125 40 Q 65 80 0 60 Z" 
+          fill="#FFFFFF" stroke="#0284C7" stroke-width="4" filter="url(#shadow)"/>
+    
+    <!-- Spine center divider -->
+    <path d="M 0 -95 L 0 60" stroke="#0284C7" stroke-width="3"/>
+
+    <!-- Page contours / curves -->
+    <path d="M -115 -90 Q -60 -65 -5 -82" stroke="#CBD5E1" stroke-width="2" fill="none"/>
+    <path d="M 115 -90 Q 60 -65 5 -82" stroke="#CBD5E1" stroke-width="2" fill="none"/>
+
+    <!-- Left Page Emblem: Crossed Sword & Logistics Wheat Sheaf -->
+    <g transform="translate(-56, -20) scale(0.85)">
+      <!-- Crossed sword -->
+      <path d="M -25 -25 L 25 25" stroke="#EAB308" stroke-width="7" stroke-linecap="round"/>
+      <path d="M -28 -28 L -15 -35 L -10 -20 Z" fill="#CA8A04"/>
+      <!-- Cross guard -->
+      <line x1="-12" y1="-30" x2="-30" y2="-12" stroke="#CA8A04" stroke-width="6" stroke-linecap="round"/>
+      <!-- Crossed wheat / caduceus curve -->
+      <path d="M 22 -22 Q -10 -10 -20 20" stroke="#CA8A04" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <circle cx="-16" cy="14" r="5" fill="#EAB308"/>
+      <circle cx="-8" cy="6" r="4.5" fill="#FACC15"/>
+      <circle cx="2" cy="-2" r="4" fill="#EAB308"/>
+      <circle cx="12" cy="-10" r="3.5" fill="#FACC15"/>
+    </g>
+
+    <!-- Right Page Emblem: Atomic Orbit Symbol (Khoa học công nghệ & Kỹ thuật) -->
+    <g transform="translate(56, -20) scale(0.9)">
+      <!-- Central nucleus -->
+      <circle cx="0" cy="0" r="10" fill="#2563EB" stroke="#1D4ED8" stroke-width="2"/>
+      <!-- Orbits -->
+      <ellipse cx="0" cy="0" rx="30" ry="11" fill="none" stroke="#DC2626" stroke-width="3" transform="rotate(30)"/>
+      <ellipse cx="0" cy="0" rx="30" ry="11" fill="none" stroke="#16A34A" stroke-width="3" transform="rotate(-30)"/>
+      <ellipse cx="0" cy="0" rx="30" ry="11" fill="none" stroke="#0284C7" stroke-width="3" transform="rotate(90)"/>
+      <!-- Orbiting electrons -->
+      <circle cx="24" cy="14" r="4.5" fill="#EF4444"/>
+      <circle cx="-24" cy="14" r="4.5" fill="#22C55E"/>
+      <circle cx="0" cy="-28" r="4.5" fill="#38BDF8"/>
+    </g>
+  </g>
+</svg>
