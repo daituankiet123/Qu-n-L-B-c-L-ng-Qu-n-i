@@ -27,6 +27,7 @@ import {
 import { formatVND } from '../../services/salaryCalculator';
 import { evaluateQNCNEligibility } from '../../services/salaryProgressionEngine';
 import { exportReviewProposalsToExcel } from '../../services/excelService';
+import { useToast } from '../../context/ToastContext';
 
 interface ReviewCycleManagerProps {
   cycles: SalaryReviewCycle[];
@@ -47,6 +48,7 @@ export const ReviewCycleManager: React.FC<ReviewCycleManagerProps> = ({
   onSelectCycle,
   onNavigateToApproval,
 }) => {
+  const toast = useToast();
   const [selectedCycleId, setSelectedCycleId] = useState<string>(cycles[0]?.id || '');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCycleForm, setNewCycleForm] = useState({
@@ -83,7 +85,14 @@ export const ReviewCycleManager: React.FC<ReviewCycleManagerProps> = ({
 
     const updatedList = cycles.map((c) => (c.id === cycleId ? updatedCycle : c));
     onSaveCycles(updatedList);
-    alert(`Đã tự động quét database và cập nhật ${evaluatedItems.length} quân nhân đủ tiêu chuẩn vào đợt xét!`);
+    toast.success(
+      'Đã quét dữ liệu quân nhân!',
+      `Đã tự động cập nhật ${evaluatedItems.length} quân nhân đủ tiêu chuẩn vào "${cycle.tenDot}".`,
+      {
+        badge: 'TỰ ĐỘNG QUÉT',
+        duration: 4500,
+      }
+    );
   };
 
   const handleCreateCycle = (e: React.FormEvent) => {
@@ -117,13 +126,29 @@ export const ReviewCycleManager: React.FC<ReviewCycleManagerProps> = ({
     onSaveCycles(updated);
     setSelectedCycleId(newCycle.id);
     setShowCreateModal(false);
+
+    toast.success(
+      'Đã tạo đợt xét duyệt lương mới!',
+      `Khởi tạo thành công "${newCycle.tenDot}" (Năm ${newCycle.nam}) với ${evaluatedItems.length} quân nhân đủ điều kiện đề xuất.`,
+      {
+        badge: 'ĐỢT XÉT MỚI',
+        duration: 5500,
+      }
+    );
   };
 
   const handleDeleteCycle = (id: string) => {
-    if (window.confirm('Xác nhận xóa đợt xét nâng lương này?')) {
+    const target = cycles.find((c) => c.id === id);
+    if (window.confirm(`Xác nhận xóa đợt xét "${target?.tenDot || id}"?`)) {
       const updated = cycles.filter((c) => c.id !== id);
       onSaveCycles(updated);
       if (updated.length > 0) setSelectedCycleId(updated[0].id);
+
+      toast.info(
+        'Đã xóa đợt xét nâng lương',
+        `Đợt xét "${target?.tenDot || id}" đã được xóa khỏi hệ thống.`,
+        { badge: 'XÓA ĐỢT XÉT' }
+      );
     }
   };
 

@@ -12,6 +12,8 @@ import { SalaryConfigView } from './components/salary-config/SalaryConfigView';
 import { ReviewCycleManager } from './components/review-cycles/ReviewCycleManager';
 import { ApprovalWorkflowView } from './components/approval/ApprovalWorkflowView';
 import { PayrollSheetView } from './components/payroll-sheet/PayrollSheetView';
+import { ToastProvider, useToast } from './context/ToastContext';
+import { ToastContainer } from './components/common/ToastContainer';
 import { storageService } from './services/storageService';
 import {
   QNCNProfile,
@@ -22,7 +24,8 @@ import {
 } from './types';
 import { evaluateQNCNEligibility } from './services/salaryProgressionEngine';
 
-export const App: React.FC = () => {
+const MainApp: React.FC = () => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
 
   // Core Datasets
@@ -71,7 +74,7 @@ export const App: React.FC = () => {
     return ev.loaiNangLuong !== 'Chưa đủ điều kiện' && ev.loaiNangLuong !== 'Kéo dài do kỷ luật';
   }).length;
 
-  // Handlers with Audit Logging
+  // Handlers with Audit Logging and Real-time Toasts
   const handleImportSuccess = (imported: QNCNProfile[], mode: 'append' | 'overwrite') => {
     if (mode === 'overwrite') {
       setQncnList(imported);
@@ -95,6 +98,20 @@ export const App: React.FC = () => {
       diaChiIP: '192.168.1.25 (Ban Quân lực)',
     });
     setAuditLogs((prev) => [newLog, ...prev]);
+
+    // Real-time Toast Notification
+    toast.success(
+      'Import danh sách QNCN thành công!',
+      `Đã nạp thành công ${imported.length} hồ sơ quân nhân vào hệ thống (${mode === 'overwrite' ? 'Ghi đè toàn bộ' : 'Bổ sung vào danh sách hiện có'}).`,
+      {
+        badge: 'EXCEL IMPORT',
+        duration: 5500,
+        action: {
+          label: 'Xem danh sách hồ sơ quân nhân ➔',
+          onClick: () => setActiveTab('personnel'),
+        },
+      }
+    );
   };
 
   const handleSaveProfile = (profile: QNCNProfile) => {
@@ -122,6 +139,16 @@ export const App: React.FC = () => {
       diaChiIP: '192.168.1.26 (Ban Quân lực)',
     });
     setAuditLogs((prev) => [newLog, ...prev]);
+
+    // Real-time Toast
+    toast.success(
+      isUpdate ? 'Đã cập nhật hồ sơ QNCN' : 'Đã thêm mới hồ sơ QNCN',
+      `Đồng chí ${profile.hoVaTen} (${profile.capBac}, Số hiệu: ${profile.maQNCN}) đã được lưu vào hệ thống.`,
+      {
+        badge: isUpdate ? 'CẬP NHẬT' : 'THÊM MỚI',
+        duration: 4000,
+      }
+    );
   };
 
   const handleDeleteProfile = (id: string) => {
@@ -141,6 +168,15 @@ export const App: React.FC = () => {
       diaChiIP: '192.168.1.25 (Ban Quân lực)',
     });
     setAuditLogs((prev) => [newLog, ...prev]);
+
+    toast.warning(
+      'Đã xóa hồ sơ quân nhân',
+      `Đã xóa hồ sơ ${target?.hoVaTen || id} (${target?.maQNCN || ''}) khỏi cơ sở dữ liệu.`,
+      {
+        badge: 'XÓA HỒ SƠ',
+        duration: 4500,
+      }
+    );
   };
 
   const handleSaveScales = (newScales: SalaryScaleConfig[]) => {
@@ -157,6 +193,12 @@ export const App: React.FC = () => {
       diaChiIP: '192.168.1.30 (Ban Tài chính)',
     });
     setAuditLogs((prev) => [newLog, ...prev]);
+
+    toast.success(
+      'Cập nhật thang bảng lương thành công!',
+      `Đã lưu cấu hình mới cho ${newScales.length} ngạch nhóm lương QNCN.`,
+      { badge: 'CẤU HÌNH LƯƠNG' }
+    );
   };
 
   const handleSaveRules = (newRules: GeneralSalaryRules) => {
@@ -173,6 +215,12 @@ export const App: React.FC = () => {
       diaChiIP: '192.168.1.30 (Ban Tài chính)',
     });
     setAuditLogs((prev) => [newLog, ...prev]);
+
+    toast.success(
+      'Cập nhật tham số tiền lương thành công!',
+      `Mức lương cơ sở: ${newRules.luongCoSo.toLocaleString('vi-VN')} VNĐ (Nghị định 73/2024/NĐ-CP).`,
+      { badge: 'LƯƠNG CƠ SỞ' }
+    );
   };
 
   const handleApplyApprovedPromotion = (cycle: SalaryReviewCycle) => {
@@ -242,7 +290,19 @@ export const App: React.FC = () => {
     });
     setAuditLogs((prev) => [newLog, ...prev]);
 
-    alert(`Đã ban hành Quyết định ${decisionNumber} và Bản Trích sao ${trichSaoNumber} thành công cho ${approvedMap.size} quân nhân! Đã ghi nhận vào Nhật ký hệ thống.`);
+    // Real-time Toast Notification
+    toast.success(
+      'Ban hành Quyết định & Bản Trích sao thành công!',
+      `Hiệu trưởng đã duyệt Bản Trích sao số ${trichSaoNumber} (QĐ ${decisionNumber}). Bậc lương và hệ số mới của ${approvedMap.size} quân nhân đã được cập nhật vào hồ sơ!`,
+      {
+        badge: 'BAN HÀNH THÀNH CÔNG',
+        duration: 6500,
+        action: {
+          label: 'Xem bảng thanh toán lương mới ➔',
+          onClick: () => setActiveTab('payroll-sheet'),
+        },
+      }
+    );
   };
 
   const handleResetDefaults = () => {
@@ -257,7 +317,12 @@ export const App: React.FC = () => {
       setRules(storageService.getSalaryRules());
       setReviewCycles(storageService.getReviewCycles());
       setAuditLogs(storageService.getAuditLogs());
-      alert('Đã khôi phục dữ liệu gốc và khởi tạo lại nhật ký kiểm tra!');
+
+      toast.info(
+        'Khôi phục dữ liệu gốc thành công!',
+        'Cơ sở dữ liệu mẫu chuẩn của Trường Cao Đẳng Hậu cần 2 đã được tái lập.',
+        { badge: 'KHÔI PHỤC' }
+      );
     }
   };
 
@@ -284,6 +349,12 @@ export const App: React.FC = () => {
       diaChiIP: '192.168.1.50 (Máy chủ Quản trị)',
     });
     setAuditLogs((prev) => [newLog, ...prev]);
+
+    toast.success(
+      'Đã xuất tệp sao lưu hệ thống!',
+      `Tệp sao lưu Sao_Luu_He_Thong_QNCN_CDHC2_${todayStr}.json đã được tải xuống an toàn.`,
+      { badge: 'BACKUP' }
+    );
   };
 
   const handleImportBackup = () => {
@@ -317,9 +388,17 @@ export const App: React.FC = () => {
         });
         setAuditLogs((prev) => [newLog, ...prev]);
 
-        alert('Phục hồi dữ liệu hệ thống từ file sao lưu thành công!');
+        toast.success(
+          'Phục hồi dữ liệu hệ thống thành công!',
+          `Đã phục hồi hoàn chỉnh cơ sở dữ liệu từ file sao lưu "${file.name}".`,
+          { badge: 'RESTORE', duration: 5500 }
+        );
       } else {
-        alert('File sao lưu không hợp lệ!');
+        toast.error(
+          'Phục hồi dữ liệu thất bại',
+          'Tệp sao lưu không hợp lệ hoặc bị lỗi cấu trúc dữ liệu JSON!',
+          { badge: 'LỖI TỆP' }
+        );
       }
     };
     reader.readAsText(file);
@@ -328,15 +407,22 @@ export const App: React.FC = () => {
   const handleClearAuditLogs = () => {
     storageService.clearAuditLogs();
     setAuditLogs([]);
+    toast.info('Đã xóa lịch sử nhật ký hệ thống', 'Toàn bộ dữ liệu audit log đã được làm sạch.');
   };
 
   const handleRefreshAuditLogs = () => {
     setAuditLogs(storageService.getAuditLogs());
+    toast.info('Đã làm mới nhật ký kiểm tra', 'Dữ liệu mới nhất đã được cập nhật.');
   };
 
   const handleAddManualAuditLog = (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => {
     const newLog = storageService.addAuditLog(entry);
     setAuditLogs((prev) => [newLog, ...prev]);
+    toast.success(
+      'Đã ghi nhận biên bản kiểm tra!',
+      `Hành động "${entry.hanhDong}" đã được lưu vào sổ nhật ký kiểm tra.`,
+      { badge: 'NHẬT KÝ' }
+    );
   };
 
   return (
@@ -442,7 +528,7 @@ export const App: React.FC = () => {
                   rules={rules}
                   onSaveCycles={setReviewCycles}
                   onSelectCycle={() => {}}
-                  onNavigateToApproval={(c) => setActiveTab('approval')}
+                  onNavigateToApproval={() => setActiveTab('approval')}
                 />
               )}
 
@@ -495,6 +581,17 @@ export const App: React.FC = () => {
           setIsFormModalOpen(true);
         }}
       />
+
+      {/* Real-time Toast Notifications Container */}
+      <ToastContainer />
     </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <ToastProvider>
+      <MainApp />
+    </ToastProvider>
   );
 };
