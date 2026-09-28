@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Header } from './components/layout/Header';
 import { Sidebar, ActiveTab } from './components/layout/Sidebar';
+import { LiquidNavBar } from './components/layout/LiquidNavBar';
 import { DashboardOverview } from './components/dashboard/DashboardOverview';
 import { PersonnelList } from './components/personnel/PersonnelList';
 import { ImportPersonnelModal } from './components/personnel/ImportPersonnelModal';
@@ -16,6 +18,7 @@ import {
   SalaryScaleConfig,
   GeneralSalaryRules,
   SalaryReviewCycle,
+  AuditLogEntry,
 } from './types';
 import { evaluateQNCNEligibility } from './services/salaryProgressionEngine';
 
@@ -29,6 +32,7 @@ export const App: React.FC = () => {
   const [reviewCycles, setReviewCycles] = useState<SalaryReviewCycle[]>(() =>
     storageService.getReviewCycles()
   );
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => storageService.getAuditLogs());
 
   // Modals
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -56,6 +60,10 @@ export const App: React.FC = () => {
     storageService.saveReviewCycles(reviewCycles);
   }, [reviewCycles]);
 
+  useEffect(() => {
+    storageService.saveAuditLogs(auditLogs);
+  }, [auditLogs]);
+
   // Count due for review currently
   const todayStr = new Date().toISOString().split('T')[0];
   const dueCount = qncnList.filter((p) => {
@@ -63,7 +71,7 @@ export const App: React.FC = () => {
     return ev.loaiNangLuong !== 'Chưa đủ điều kiện' && ev.loaiNangLuong !== 'Kéo dài do kỷ luật';
   }).length;
 
-  // Handlers
+  // Handlers with Audit Logging
   const handleImportSuccess = (imported: QNCNProfile[], mode: 'append' | 'overwrite') => {
     if (mode === 'overwrite') {
       setQncnList(imported);
@@ -73,25 +81,103 @@ export const App: React.FC = () => {
       const filtered = imported.filter((p) => !existingIds.has(p.maQNCN));
       setQncnList([...qncnList, ...filtered]);
     }
+
+    // Ghi nhật ký kiểm tra hệ thống
+    const newLog = storageService.addAuditLog({
+      nguoiThucHien: 'Ban Quân lực',
+      chucVuNguoiThucHien: 'Cán bộ Quân lực',
+      chuyenMuc: 'Hồ sơ QNCN',
+      loaiHanhDong: 'IMPORT_PERSONNEL',
+      hanhDong: 'Import danh sách QNCN từ Excel',
+      chiTiet: `Đã nạp thành công ${imported.length} hồ sơ quân nhân (Chế độ: ${mode === 'overwrite' ? 'Ghi đè toàn bộ' : 'Bổ sung danh sách'}).`,
+      doiTuongLienQuan: `${imported.length} hồ sơ`,
+      mucDo: 'THÔNG TIN',
+      diaChiIP: '192.168.1.25 (Ban Quân lực)',
+    });
+    setAuditLogs((prev) => [newLog, ...prev]);
   };
 
   const handleSaveProfile = (profile: QNCNProfile) => {
     const existingIndex = qncnList.findIndex((p) => p.id === profile.id);
-    if (existingIndex >= 0) {
+    const isUpdate = existingIndex >= 0;
+
+    if (isUpdate) {
       const updated = [...qncnList];
       updated[existingIndex] = profile;
       setQncnList(updated);
     } else {
       setQncnList([profile, ...qncnList]);
     }
+
+    // Ghi nhật ký
+    const newLog = storageService.addAuditLog({
+      nguoiThucHien: 'Ban Quân lực',
+      chucVuNguoiThucHien: 'Trợ lý Quân lực',
+      chuyenMuc: 'Hồ sơ QNCN',
+      loaiHanhDong: isUpdate ? 'UPDATE_PERSONNEL' : 'ADD_PERSONNEL',
+      hanhDong: isUpdate ? 'Cập nhật hồ sơ QNCN' : 'Tạo mới hồ sơ QNCN',
+      chiTiet: `${isUpdate ? 'Cập nhật thông tin' : 'Tạo mới hồ sơ'} đồng chí ${profile.hoVaTen} (${profile.capBac}, Bậc ${profile.bacLuongHienTai}, HS ${profile.heSoLuongHienTai.toFixed(2)}) - Đơn vị: ${profile.donVi}.`,
+      doiTuongLienQuan: `Mã QNCN: ${profile.maQNCN}`,
+      mucDo: 'THÔNG TIN',
+      diaChiIP: '192.168.1.26 (Ban Quân lực)',
+    });
+    setAuditLogs((prev) => [newLog, ...prev]);
   };
 
   const handleDeleteProfile = (id: string) => {
+    const target = qncnList.find((p) => p.id === id);
     setQncnList(qncnList.filter((p) => p.id !== id));
+
+    // Ghi nhật ký cảnh báo xóa hồ sơ
+    const newLog = storageService.addAuditLog({
+      nguoiThucHien: 'Ban Quân lực',
+      chucVuNguoiThucHien: 'Trưởng ban Quân lực',
+      chuyenMuc: 'Hồ sơ QNCN',
+      loaiHanhDong: 'DELETE_PERSONNEL',
+      hanhDong: 'Xóa hồ sơ QNCN',
+      chiTiet: `Đã xóa hồ sơ quân nhân ${target?.hoVaTen || id} (${target?.capBac || ''}, Số hiệu: ${target?.maQNCN || ''}) khỏi hệ thống.`,
+      doiTuongLienQuan: `Mã: ${target?.maQNCN || id}`,
+      mucDo: 'CẢNH BÁO',
+      diaChiIP: '192.168.1.25 (Ban Quân lực)',
+    });
+    setAuditLogs((prev) => [newLog, ...prev]);
+  };
+
+  const handleSaveScales = (newScales: SalaryScaleConfig[]) => {
+    setScales(newScales);
+    const newLog = storageService.addAuditLog({
+      nguoiThucHien: 'Ban Tài chính',
+      chucVuNguoiThucHien: 'Trưởng ban Tài chính',
+      chuyenMuc: 'Cấu hình Lương',
+      loaiHanhDong: 'UPDATE_SALARY_SCALE',
+      hanhDong: 'Cập nhật bảng thang bảng lương QNCN',
+      chiTiet: `Cập nhật cấu hình hệ số các bậc lương cho ${newScales.length} ngạch nhóm lương Quân nhân chuyên nghiệp.`,
+      doiTuongLienQuan: `${newScales.length} ngạch lương`,
+      mucDo: 'QUAN TRỌNG',
+      diaChiIP: '192.168.1.30 (Ban Tài chính)',
+    });
+    setAuditLogs((prev) => [newLog, ...prev]);
+  };
+
+  const handleSaveRules = (newRules: GeneralSalaryRules) => {
+    setRules(newRules);
+    const newLog = storageService.addAuditLog({
+      nguoiThucHien: 'Ban Tài chính',
+      chucVuNguoiThucHien: 'Trưởng ban Tài chính',
+      chuyenMuc: 'Cấu hình Lương',
+      loaiHanhDong: 'UPDATE_SALARY_RULES',
+      hanhDong: 'Thay đổi tham số cấu hình mức lương & bảo hiểm',
+      chiTiet: `Mức lương cơ sở: ${newRules.luongCoSo.toLocaleString('vi-VN')} VNĐ; BHXH: ${newRules.tyLeDongBHXH}%, BHYT: ${newRules.tyLeDongBHYT}%, BHTN: ${newRules.tyLeDongBHTN}%.`,
+      doiTuongLienQuan: `Mức lương cơ sở: ${newRules.luongCoSo.toLocaleString('vi-VN')} đ`,
+      mucDo: 'QUAN TRỌNG',
+      diaChiIP: '192.168.1.30 (Ban Tài chính)',
+    });
+    setAuditLogs((prev) => [newLog, ...prev]);
   };
 
   const handleApplyApprovedPromotion = (cycle: SalaryReviewCycle) => {
-    const decisionNumber = cycle.quyetDinh?.soQuyetDinh || '156/QĐ-HC2';
+    const decisionNumber = cycle.quyetDinh?.soQuyetDinh || '318/QĐ-TCHC';
+    const trichSaoNumber = cycle.trichSao?.soTrichSao || '52/TS-HC2';
     const decisionDate = cycle.quyetDinh?.ngayKy || todayStr;
 
     // Map of approved items
@@ -110,7 +196,7 @@ export const App: React.FC = () => {
       const historyEntry = {
         id: `ls-${Date.now()}-${p.id}`,
         ngayQuyetDinh: decisionDate,
-        soQuyetDinh: decisionNumber,
+        soQuyetDinh: `${decisionNumber} (Trích sao: ${trichSaoNumber})`,
         tuBac: p.bacLuongHienTai,
         lenBac: prop.bacDeXuat,
         tuHeSo: p.heSoLuongHienTai,
@@ -127,7 +213,7 @@ export const App: React.FC = () => {
         ngayHuongHienTai: prop.ngayHuongMoi,
         khenThuongGanNhat: 'Đã xét nâng trước hạn',
         lichSuNangLuong: [historyEntry, ...(p.lichSuNangLuong || [])],
-        ghiChu: `Đã nâng bậc lương theo QĐ ${decisionNumber} ngày ${decisionDate}`,
+        ghiChu: `Nâng lương theo QĐ ${decisionNumber} của Tổng cục Hậu cần (Bản Trích sao số ${trichSaoNumber})`,
       };
     });
 
@@ -141,7 +227,22 @@ export const App: React.FC = () => {
 
     setQncnList(updatedPersonnel);
     setReviewCycles(updatedCycles);
-    alert(`Đã ban hành Quyết định ${decisionNumber} và cập nhật dữ liệu nâng bậc lương thành công cho ${approvedMap.size} quân nhân!`);
+
+    // Ghi nhật ký phê duyệt trọng yếu
+    const newLog = storageService.addAuditLog({
+      nguoiThucHien: 'Đại tá Trần Hữu Nghĩa',
+      chucVuNguoiThucHien: 'Hiệu trưởng',
+      chuyenMuc: 'Phê duyệt & Trích sao',
+      loaiHanhDong: 'FINALIZE_PROMOTION',
+      hanhDong: 'Hiệu trưởng duyệt Bản Trích sao Quyết định thi hành',
+      chiTiet: `Ký duyệt Bản Trích sao số ${trichSaoNumber} căn cứ Quyết định số ${decisionNumber} của Thủ trưởng Tổng cục Hậu cần. Tự động cập nhật Bậc lương, Hệ số và Ngày hưởng mới cho ${approvedMap.size} quân nhân.`,
+      doiTuongLienQuan: `Bản Trích sao: ${trichSaoNumber} (QĐ: ${decisionNumber})`,
+      mucDo: 'QUAN TRỌNG',
+      diaChiIP: '192.168.1.10 (Sở Chỉ huy Nhà trường)',
+    });
+    setAuditLogs((prev) => [newLog, ...prev]);
+
+    alert(`Đã ban hành Quyết định ${decisionNumber} và Bản Trích sao ${trichSaoNumber} thành công cho ${approvedMap.size} quân nhân! Đã ghi nhận vào Nhật ký hệ thống.`);
   };
 
   const handleResetDefaults = () => {
@@ -155,7 +256,8 @@ export const App: React.FC = () => {
       setScales(storageService.getSalaryScales());
       setRules(storageService.getSalaryRules());
       setReviewCycles(storageService.getReviewCycles());
-      alert('Đã khôi phục dữ liệu gốc!');
+      setAuditLogs(storageService.getAuditLogs());
+      alert('Đã khôi phục dữ liệu gốc và khởi tạo lại nhật ký kiểm tra!');
     }
   };
 
@@ -168,6 +270,20 @@ export const App: React.FC = () => {
     a.download = `Sao_Luu_He_Thong_QNCN_CDHC2_${todayStr}.json`;
     a.click();
     URL.revokeObjectURL(url);
+
+    // Ghi nhận log xuất backup
+    const newLog = storageService.addAuditLog({
+      nguoiThucHien: 'Quản trị hệ thống',
+      chucVuNguoiThucHien: 'Bộ phận CNTT',
+      chuyenMuc: 'Hệ thống & Dữ liệu',
+      loaiHanhDong: 'BACKUP_EXPORT',
+      hanhDong: 'Xuất file sao lưu toàn bộ hệ thống (Backup)',
+      chiTiet: `Đã xuất toàn bộ cơ sở dữ liệu hồ sơ QNCN, thang bảng lương, các đợt xét và nhật ký kiểm tra ra file JSON.`,
+      doiTuongLienQuan: `Sao_Luu_He_Thong_QNCN_CDHC2_${todayStr}.json`,
+      mucDo: 'THÔNG TIN',
+      diaChiIP: '192.168.1.50 (Máy chủ Quản trị)',
+    });
+    setAuditLogs((prev) => [newLog, ...prev]);
   };
 
   const handleImportBackup = () => {
@@ -186,6 +302,21 @@ export const App: React.FC = () => {
         setScales(storageService.getSalaryScales());
         setRules(storageService.getSalaryRules());
         setReviewCycles(storageService.getReviewCycles());
+        setAuditLogs(storageService.getAuditLogs());
+
+        const newLog = storageService.addAuditLog({
+          nguoiThucHien: 'Quản trị hệ thống',
+          chucVuNguoiThucHien: 'Bộ phận CNTT',
+          chuyenMuc: 'Hệ thống & Dữ liệu',
+          loaiHanhDong: 'BACKUP_IMPORT',
+          hanhDong: 'Phục hồi dữ liệu từ file sao lưu (Restore)',
+          chiTiet: `Phục hồi thành công toàn bộ cơ sở dữ liệu hệ thống từ file ${file.name}.`,
+          doiTuongLienQuan: file.name,
+          mucDo: 'QUAN TRỌNG',
+          diaChiIP: '192.168.1.50 (Máy chủ Quản trị)',
+        });
+        setAuditLogs((prev) => [newLog, ...prev]);
+
         alert('Phục hồi dữ liệu hệ thống từ file sao lưu thành công!');
       } else {
         alert('File sao lưu không hợp lệ!');
@@ -194,8 +325,22 @@ export const App: React.FC = () => {
     reader.readAsText(file);
   };
 
+  const handleClearAuditLogs = () => {
+    storageService.clearAuditLogs();
+    setAuditLogs([]);
+  };
+
+  const handleRefreshAuditLogs = () => {
+    setAuditLogs(storageService.getAuditLogs());
+  };
+
+  const handleAddManualAuditLog = (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => {
+    const newLog = storageService.addAuditLog(entry);
+    setAuditLogs((prev) => [newLog, ...prev]);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col selection:bg-emerald-800 selection:text-white">
+    <div className="min-h-screen bg-[#e9eef5] text-slate-800 flex flex-col selection:bg-emerald-800 selection:text-white antialiased">
       {/* Hidden JSON file input for backup */}
       <input
         ref={backupInputRef}
@@ -205,7 +350,7 @@ export const App: React.FC = () => {
         className="hidden"
       />
 
-      {/* Header */}
+      {/* Neumorphic Header */}
       <Header
         rules={rules}
         totalQNCN={qncnList.length}
@@ -216,85 +361,111 @@ export const App: React.FC = () => {
       />
 
       {/* Main Container */}
-      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col lg:flex-row gap-6">
-        {/* Navigation Sidebar */}
+      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col lg:flex-row gap-6">
+        {/* Navigation Sidebar with Neumorphism & Tactile Motion */}
         <Sidebar
           activeTab={activeTab}
           onTabChange={setActiveTab}
           pendingReviewsCount={dueCount}
         />
 
-        {/* Dynamic Content Views */}
-        <main className="flex-1 min-w-0">
-          {activeTab === 'dashboard' && (
-            <DashboardOverview
-              qncnList={qncnList}
-              scales={scales}
-              rules={rules}
-              reviewCycles={reviewCycles}
-              onNavigate={setActiveTab}
-              onOpenImportModal={() => setIsImportModalOpen(true)}
-            />
-          )}
+        {/* Dynamic Content Views with Liquid Navigation & Fluid Page Transitions */}
+        <main className="flex-1 min-w-0 space-y-4">
+          {/* Top Liquid Navigation Dock */}
+          <LiquidNavBar
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            pendingReviewsCount={dueCount}
+          />
 
-          {activeTab === 'personnel' && (
-            <PersonnelList
-              qncnList={qncnList}
-              scales={scales}
-              rules={rules}
-              onOpenImportModal={() => setIsImportModalOpen(true)}
-              onOpenAddModal={() => {
-                setFormProfileToEdit(null);
-                setIsFormModalOpen(true);
+          {/* Fluid Tab Content with Spring Motion Transitions */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 14, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.99 }}
+              transition={{
+                duration: 0.28,
+                ease: [0.22, 1, 0.36, 1],
               }}
-              onEditProfile={(p) => {
-                setFormProfileToEdit(p);
-                setIsFormModalOpen(true);
-              }}
-              onViewProfile={(p) => setDetailProfile(p)}
-              onDeleteProfile={handleDeleteProfile}
-            />
-          )}
+              className="w-full"
+            >
+              {activeTab === 'dashboard' && (
+                <DashboardOverview
+                  qncnList={qncnList}
+                  scales={scales}
+                  rules={rules}
+                  reviewCycles={reviewCycles}
+                  auditLogs={auditLogs}
+                  onClearAuditLogs={handleClearAuditLogs}
+                  onRefreshAuditLogs={handleRefreshAuditLogs}
+                  onAddManualAuditLog={handleAddManualAuditLog}
+                  onNavigate={setActiveTab}
+                  onOpenImportModal={() => setIsImportModalOpen(true)}
+                />
+              )}
 
-          {activeTab === 'salary-config' && (
-            <SalaryConfigView
-              scales={scales}
-              rules={rules}
-              onSaveScales={setScales}
-              onSaveRules={setRules}
-            />
-          )}
+              {activeTab === 'personnel' && (
+                <PersonnelList
+                  qncnList={qncnList}
+                  scales={scales}
+                  rules={rules}
+                  onOpenImportModal={() => setIsImportModalOpen(true)}
+                  onOpenAddModal={() => {
+                    setFormProfileToEdit(null);
+                    setIsFormModalOpen(true);
+                  }}
+                  onEditProfile={(p) => {
+                    setFormProfileToEdit(p);
+                    setIsFormModalOpen(true);
+                  }}
+                  onViewProfile={(p) => setDetailProfile(p)}
+                  onDeleteProfile={handleDeleteProfile}
+                />
+              )}
 
-          {activeTab === 'review-cycles' && (
-            <ReviewCycleManager
-              cycles={reviewCycles}
-              qncnList={qncnList}
-              scales={scales}
-              rules={rules}
-              onSaveCycles={setReviewCycles}
-              onSelectCycle={() => {}}
-              onNavigateToApproval={(c) => setActiveTab('approval')}
-            />
-          )}
+              {activeTab === 'salary-config' && (
+                <SalaryConfigView
+                  scales={scales}
+                  rules={rules}
+                  onSaveScales={handleSaveScales}
+                  onSaveRules={handleSaveRules}
+                />
+              )}
 
-          {activeTab === 'approval' && (
-            <ApprovalWorkflowView
-              cycles={reviewCycles}
-              qncnList={qncnList}
-              onSaveCycle={(c) => {
-                setReviewCycles(reviewCycles.map((old) => (old.id === c.id ? c : old)));
-              }}
-              onApplyApprovedPromotion={handleApplyApprovedPromotion}
-            />
-          )}
+              {activeTab === 'review-cycles' && (
+                <ReviewCycleManager
+                  cycles={reviewCycles}
+                  qncnList={qncnList}
+                  scales={scales}
+                  rules={rules}
+                  onSaveCycles={setReviewCycles}
+                  onSelectCycle={() => {}}
+                  onNavigateToApproval={(c) => setActiveTab('approval')}
+                />
+              )}
 
-          {activeTab === 'payroll-sheet' && (
-            <PayrollSheetView qncnList={qncnList} rules={rules} />
-          )}
+              {activeTab === 'approval' && (
+                <ApprovalWorkflowView
+                  cycles={reviewCycles}
+                  qncnList={qncnList}
+                  onSaveCycle={(c) => {
+                    setReviewCycles(reviewCycles.map((old) => (old.id === c.id ? c : old)));
+                  }}
+                  onApplyApprovedPromotion={handleApplyApprovedPromotion}
+                />
+              )}
+
+              {activeTab === 'payroll-sheet' && (
+                <PayrollSheetView qncnList={qncnList} rules={rules} />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
 
-      {/* Global Modals */}
+      {/* Global Modals with Spring Transitions */}
       <ImportPersonnelModal
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}

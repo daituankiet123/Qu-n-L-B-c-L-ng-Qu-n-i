@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import {
   Sliders,
   Save,
@@ -11,6 +12,7 @@ import {
   Award,
   AlertTriangle,
   Info,
+  Droplets,
 } from 'lucide-react';
 import { SalaryScaleConfig, GeneralSalaryRules } from '../../types';
 import { formatVND } from '../../services/salaryCalculator';
@@ -146,46 +148,54 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Top Banner & Save Action */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* Top Banner & Save Action in Neumorphic Card */}
+      <div className="neu-flat rounded-3xl p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
               <Sliders className="w-5 h-5 text-emerald-700" />
-              Thiết Lập Quy Chế & Bảng Hệ Số Lương (Nhập Tay)
+              Thiết Lập Quy Chế & Bảng Hệ Số Lương (Nhập Tay 100%)
             </h2>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-              Tùy biến 100%
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black neu-amber text-slate-950">
+              Soft UI
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Cho phép cán bộ tự do thay đổi mức lương cơ sở, chu kỳ giữ bậc, bảng hệ số lương và quy chế khen thưởng / kỷ luật
+          <p className="text-xs text-slate-500 mt-1 font-medium">
+            Tự do thay đổi mức lương cơ sở, chu kỳ giữ bậc, bảng hệ số lương và quy chế khen thưởng / kỷ luật
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
+          <motion.button
+            whileHover={{ y: -2, scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
             onClick={handleResetRulesToDefault}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs border border-slate-300 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl neu-convex text-slate-700 font-bold text-xs transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Khôi phục chuẩn BQP
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileHover={{ y: -2, scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
             onClick={handleSaveAll}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl neu-emerald text-white font-black text-xs shadow-md transition-all"
           >
             <Save className="w-4 h-4 text-amber-300" />
             Lưu toàn bộ thiết lập
-          </button>
+          </motion.button>
         </div>
       </div>
 
       {savedToast && (
-        <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center gap-2 text-xs font-semibold text-emerald-900 animate-fadeIn">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 neu-flat rounded-2xl flex items-center gap-2 text-xs font-bold text-emerald-900 border-l-4 border-emerald-600"
+        >
           <CheckCircle2 className="w-4 h-4 text-emerald-700" />
           Đã lưu thành công các thông số và bảng hệ số mới vào hệ thống!
-        </div>
+        </motion.div>
       )}
 
       {/* Grid: 2 sections (Parameters & Scales) */}
@@ -193,8 +203,8 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
         {/* Left Column: General Rules & Manual Parameters */}
         <div className="lg:col-span-1 space-y-6">
           {/* Base Salary Card */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 space-y-4">
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
+          <div className="neu-flat rounded-3xl p-5 space-y-4">
+            <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-300/60">
               <DollarSign className="w-4 h-4 text-emerald-700" />
               1. Mức lương cơ sở & Bảo hiểm
             </h3>
@@ -212,19 +222,19 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
                     onChange={(e) =>
                       setCurrentRules({ ...currentRules, luongCoSo: Number(e.target.value) || 0 })
                     }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-mono font-bold text-sm text-emerald-900"
+                    className="w-full px-3.5 py-2 neu-input rounded-2xl font-mono font-black text-sm text-emerald-950"
                   />
-                  <span className="absolute right-3 top-2 text-xs font-bold text-slate-400">VNĐ</span>
+                  <span className="absolute right-3.5 top-2.5 text-xs font-bold text-slate-400">VNĐ</span>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1 font-medium">
-                  Hiện hành: <span className="font-bold text-amber-700">{formatVND(currentRules.luongCoSo)}</span> (NĐ 73/2024/NĐ-CP)
+                <div className="text-[11px] text-slate-500 mt-1 font-semibold">
+                  Hiện hành: <span className="font-black text-amber-700">{formatVND(currentRules.luongCoSo)}</span> (NĐ 73/2024/NĐ-CP)
                 </div>
               </div>
 
               {/* Insurance rates */}
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-300/50">
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">% BHXH</label>
+                  <label className="block font-bold text-slate-600 mb-1">% BHXH</label>
                   <input
                     type="number"
                     step="0.1"
@@ -232,11 +242,11 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
                     onChange={(e) =>
                       setCurrentRules({ ...currentRules, tyLeDongBHXH: Number(e.target.value) || 0 })
                     }
-                    className="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-mono"
+                    className="w-full px-2.5 py-1.5 neu-input rounded-xl text-xs font-mono font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">% BHYT</label>
+                  <label className="block font-bold text-slate-600 mb-1">% BHYT</label>
                   <input
                     type="number"
                     step="0.1"
@@ -244,11 +254,11 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
                     onChange={(e) =>
                       setCurrentRules({ ...currentRules, tyLeDongBHYT: Number(e.target.value) || 0 })
                     }
-                    className="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-mono"
+                    className="w-full px-2.5 py-1.5 neu-input rounded-xl text-xs font-mono font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">% BHTN</label>
+                  <label className="block font-bold text-slate-600 mb-1">% BHTN</label>
                   <input
                     type="number"
                     step="0.1"
@@ -256,7 +266,7 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
                     onChange={(e) =>
                       setCurrentRules({ ...currentRules, tyLeDongBHTN: Number(e.target.value) || 0 })
                     }
-                    className="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-mono"
+                    className="w-full px-2.5 py-1.5 neu-input rounded-xl text-xs font-mono font-bold"
                   />
                 </div>
               </div>
@@ -264,15 +274,15 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
           </div>
 
           {/* Standard Holding Period (Thời gian giữ bậc chuẩn) */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 space-y-4">
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
+          <div className="neu-flat rounded-3xl p-5 space-y-4">
+            <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-300/60">
               <Shield className="w-4 h-4 text-emerald-700" />
               2. Thời hạn giữ bậc quy định (Tháng)
             </h3>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-bold text-slate-700 mb-1">
                   Ngạch Cao cấp (Nhóm 1, Nhóm 2)
                 </label>
                 <div className="flex items-center gap-2">
@@ -285,14 +295,14 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
                         soThangGiuBacCaoCap: Number(e.target.value) || 36,
                       })
                     }
-                    className="w-24 px-3 py-1.5 border border-slate-300 rounded-lg font-mono font-bold text-xs"
+                    className="w-24 px-3 py-1.5 neu-input rounded-xl font-mono font-black text-xs"
                   />
-                  <span className="text-slate-500">tháng ({currentRules.soThangGiuBacCaoCap / 12} năm)</span>
+                  <span className="text-slate-500 font-semibold">tháng ({currentRules.soThangGiuBacCaoCap / 12} năm)</span>
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-bold text-slate-700 mb-1">
                   Ngạch Trung cấp (Nhóm 1, Nhóm 2)
                 </label>
                 <div className="flex items-center gap-2">
@@ -305,14 +315,14 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
                         soThangGiuBacTrungCap: Number(e.target.value) || 36,
                       })
                     }
-                    className="w-24 px-3 py-1.5 border border-slate-300 rounded-lg font-mono font-bold text-xs"
+                    className="w-24 px-3 py-1.5 neu-input rounded-xl font-mono font-black text-xs"
                   />
-                  <span className="text-slate-500">tháng ({currentRules.soThangGiuBacTrungCap / 12} năm)</span>
+                  <span className="text-slate-500 font-semibold">tháng ({currentRules.soThangGiuBacTrungCap / 12} năm)</span>
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-bold text-slate-700 mb-1">
                   Ngạch Sơ cấp
                 </label>
                 <div className="flex items-center gap-2">
@@ -325,47 +335,47 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
                         soThangGiuBacSoCap: Number(e.target.value) || 24,
                       })
                     }
-                    className="w-24 px-3 py-1.5 border border-slate-300 rounded-lg font-mono font-bold text-xs"
+                    className="w-24 px-3 py-1.5 neu-input rounded-xl font-mono font-black text-xs"
                   />
-                  <span className="text-slate-500">tháng ({currentRules.soThangGiuBacSoCap / 12} năm)</span>
+                  <span className="text-slate-500 font-semibold">tháng ({currentRules.soThangGiuBacSoCap / 12} năm)</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Seniority & Beyond-Grade Rules */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 space-y-4">
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
+          <div className="neu-flat rounded-3xl p-5 space-y-4">
+            <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-300/60">
               <Award className="w-4 h-4 text-emerald-700" />
               3. Phụ cấp Thâm niên & Vượt khung
             </h3>
 
             <div className="space-y-3 text-xs">
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-2">
-                <span className="font-bold text-slate-800 block text-[11px]">Thâm niên nghề Quân đội:</span>
+              <div className="neu-pressed p-3 rounded-2xl space-y-2">
+                <span className="font-black text-slate-900 block text-[11px]">Thâm niên nghề Quân đội:</span>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Bắt đầu tính sau:</span>
-                  <span className="font-bold text-slate-800 font-mono">{currentRules.thoiHanThamNienBatDauNam} năm</span>
+                  <span className="text-slate-600 font-medium">Bắt đầu tính sau:</span>
+                  <span className="font-black text-slate-900 font-mono">{currentRules.thoiHanThamNienBatDauNam} năm</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Tỷ lệ khởi điểm (đủ 5 năm):</span>
-                  <span className="font-bold text-slate-800 font-mono">{currentRules.mucHuongThamNienKhoiDiem}%</span>
+                  <span className="text-slate-600 font-medium">Tỷ lệ khởi điểm (đủ 5 năm):</span>
+                  <span className="font-black text-slate-900 font-mono">{currentRules.mucHuongThamNienKhoiDiem}%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Mỗi năm tiếp theo cộng:</span>
-                  <span className="font-bold text-slate-800 font-mono">+{currentRules.moiNamThamNienThem}%</span>
+                  <span className="text-slate-600 font-medium">Mỗi năm tiếp theo cộng:</span>
+                  <span className="font-black text-slate-900 font-mono">+{currentRules.moiNamThamNienThem}%</span>
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-2">
-                <span className="font-bold text-slate-800 block text-[11px]">Thâm niên vượt khung (Kịch bậc):</span>
+              <div className="neu-pressed p-3 rounded-2xl space-y-2">
+                <span className="font-black text-slate-900 block text-[11px]">Thâm niên vượt khung (Kịch bậc):</span>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Mức hưởng năm đầu tiên:</span>
-                  <span className="font-bold text-purple-800 font-mono">{currentRules.mucVuotKhungNamDau}%</span>
+                  <span className="text-slate-600 font-medium">Mức hưởng năm đầu tiên:</span>
+                  <span className="font-black text-purple-900 font-mono">{currentRules.mucVuotKhungNamDau}%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Mỗi năm giữ kịch bậc thêm:</span>
-                  <span className="font-bold text-purple-800 font-mono">+{currentRules.moiNamVuotKhungThem}%</span>
+                  <span className="text-slate-600 font-medium">Mỗi năm giữ kịch bậc thêm:</span>
+                  <span className="font-black text-purple-900 font-mono">+{currentRules.moiNamVuotKhungThem}%</span>
                 </div>
               </div>
             </div>
@@ -374,36 +384,38 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
 
         {/* Right Column: Salary Scales (Bảng Hệ Số Ngạch - Bậc) & Reward/Discipline Table */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Salary Scale Table with Tabs */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {/* Salary Scale Table with Liquid Tabs */}
+          <div className="neu-flat rounded-3xl p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-300/60">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
+                <h3 className="text-sm font-black text-slate-900">
                   Bảng Hệ Số Lương Theo Từng Ngạch QNCN
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 font-medium">
                   Sửa đổi trực tiếp hệ số của từng bậc lương, thêm bậc mới hoặc xóa bậc
                 </p>
               </div>
-              <button
+              <motion.button
+                whileHover={{ y: -1, scale: 1.02 }}
+                whileTap={{ scale: 0.96 }}
                 onClick={() => handleAddStep(selectedScale.id)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors self-start sm:self-auto"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl neu-emerald text-white font-bold text-xs transition-colors self-start sm:self-auto shadow-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Thêm Bậc {selectedScale.danhSachBac.length + 1}
-              </button>
+              </motion.button>
             </div>
 
-            {/* Scale Tabs */}
-            <div className="flex overflow-x-auto border-b border-slate-200 bg-slate-100/60 p-1.5 gap-1 text-xs">
+            {/* Liquid-style Scale Tabs in Neumorphic Well */}
+            <div className="neu-pressed rounded-2xl p-1.5 flex gap-1 overflow-x-auto text-xs">
               {currentScales.map((scale) => (
                 <button
                   key={scale.id}
                   onClick={() => setActiveScaleTab(scale.id)}
-                  className={`px-3 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
+                  className={`px-3 py-2 rounded-xl font-bold whitespace-nowrap transition-all outline-none ${
                     activeScaleTab === scale.id
-                      ? 'bg-white text-emerald-900 font-bold shadow-xs border border-slate-200'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                      ? 'neu-convex text-emerald-950 font-black shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   {scale.tenNgach}
@@ -411,25 +423,26 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
               ))}
             </div>
 
-            {/* Scale Steps Table */}
-            <div className="p-5">
-              <div className="mb-3 flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-700">
-                  {selectedScale.tenNgach} • Bậc tối đa: <span className="font-bold text-emerald-800 font-mono">{selectedScale.bacToiDa}</span>
+            {/* Scale Steps Grid */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs px-1">
+                <span className="font-extrabold text-slate-800">
+                  {selectedScale.tenNgach} • Bậc tối đa: <span className="font-black text-emerald-900 font-mono">{selectedScale.bacToiDa}</span>
                 </span>
-                <span className="text-slate-400">Niên hạn giữ bậc: {selectedScale.soNamGiuBacChuan} năm</span>
+                <span className="text-slate-500 font-medium">Niên hạn giữ bậc: {selectedScale.soNamGiuBacChuan} năm</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {selectedScale.danhSachBac.map((step, idx) => {
                   const monthlyMoney = Math.round(step.heSo * currentRules.luongCoSo);
                   return (
-                    <div
+                    <motion.div
                       key={step.bac}
-                      className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:border-emerald-500 transition-all space-y-2 relative group"
+                      whileHover={{ y: -2 }}
+                      className="p-3.5 rounded-2xl neu-convex space-y-2 relative group"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-800 text-xs">
+                        <span className="font-black text-slate-900 text-xs">
                           Bậc {step.bac}
                         </span>
                         {idx === selectedScale.danhSachBac.length - 1 && selectedScale.danhSachBac.length > 1 && (
@@ -444,7 +457,7 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
                       </div>
 
                       <div>
-                        <label className="block text-[10px] text-slate-500 uppercase font-semibold mb-0.5">
+                        <label className="block text-[10px] text-slate-500 uppercase font-black mb-0.5">
                           Hệ số
                         </label>
                         <input
@@ -454,14 +467,14 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
                           onChange={(e) =>
                             handleStepCoefficientChange(selectedScale.id, idx, Number(e.target.value) || 0)
                           }
-                          className="w-full px-2 py-1 border border-slate-300 rounded font-mono font-bold text-emerald-800 text-xs bg-white"
+                          className="w-full px-2.5 py-1.5 neu-input rounded-xl font-mono font-black text-emerald-950 text-xs"
                         />
                       </div>
 
-                      <div className="text-[10px] text-slate-500 font-mono truncate">
+                      <div className="text-[10px] text-slate-500 font-mono truncate font-semibold">
                         = {formatVND(monthlyMoney)}
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -471,24 +484,24 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
           {/* Reward & Discipline Rules Management */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Rewards (Nâng trước thời hạn) */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="neu-flat rounded-3xl p-5 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-300/60">
+                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                   <Award className="w-4 h-4 text-amber-600" />
                   Khen thưởng (Nâng trước hạn)
                 </h4>
               </div>
 
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {currentRules.quyDinhNangTruocHan.map((r) => (
                   <div
                     key={r.id}
-                    className="p-2.5 bg-amber-50/60 border border-amber-200 rounded-lg flex items-center justify-between text-xs"
+                    className="p-2.5 neu-pressed rounded-xl flex items-center justify-between text-xs"
                   >
                     <div>
                       <div className="font-bold text-amber-950">{r.danhHieu}</div>
                       <div className="text-[11px] text-amber-800">
-                        Rút ngắn: <strong className="font-mono">{r.soThangRutNgan} tháng</strong>
+                        Rút ngắn: <strong className="font-mono font-black">{r.soThangRutNgan} tháng</strong>
                       </div>
                     </div>
                     <button
@@ -502,53 +515,54 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
               </div>
 
               {/* Add reward rule input */}
-              <div className="pt-2 border-t border-slate-100 space-y-2 text-xs">
+              <div className="pt-2 border-t border-slate-300/50 space-y-2 text-xs">
                 <input
                   type="text"
                   placeholder="Tên danh hiệu khen thưởng..."
                   value={newReward.danhHieu}
                   onChange={(e) => setNewReward({ ...newReward, danhHieu: e.target.value })}
-                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg"
+                  className="w-full px-3 py-1.5 neu-input rounded-xl font-medium"
                 />
                 <div className="flex gap-2">
                   <select
                     value={newReward.soThangRutNgan}
                     onChange={(e) => setNewReward({ ...newReward, soThangRutNgan: Number(e.target.value) })}
-                    className="w-32 px-2 py-1.5 border border-slate-300 rounded-lg"
+                    className="w-32 px-2.5 py-1.5 neu-input rounded-xl font-bold"
                   >
                     <option value={6}>Rút 6 tháng</option>
                     <option value={9}>Rút 9 tháng</option>
                     <option value={12}>Rút 12 tháng</option>
                   </select>
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
                     onClick={handleAddRewardRule}
-                    className="flex-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-emerald-950 font-bold rounded-lg transition-colors flex items-center justify-center gap-1"
+                    className="flex-1 px-3 py-1.5 neu-amber text-slate-950 font-black rounded-xl transition-all flex items-center justify-center gap-1 shadow-sm"
                   >
                     <Plus className="w-3.5 h-3.5" /> Thêm quy định
-                  </button>
+                  </motion.button>
                 </div>
               </div>
             </div>
 
             {/* Discipline (Kéo dài thời hạn) */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="neu-flat rounded-3xl p-5 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-300/60">
+                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                   <AlertTriangle className="w-4 h-4 text-rose-600" />
                   Kỷ luật (Kéo dài thời hạn)
                 </h4>
               </div>
 
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {currentRules.quyDinhKyLuat.map((d) => (
                   <div
                     key={d.id}
-                    className="p-2.5 bg-rose-50/60 border border-rose-200 rounded-lg flex items-center justify-between text-xs"
+                    className="p-2.5 neu-pressed rounded-xl flex items-center justify-between text-xs"
                   >
                     <div>
                       <div className="font-bold text-rose-950">{d.hinhThuc}</div>
                       <div className="text-[11px] text-rose-800">
-                        Kéo dài thêm: <strong className="font-mono">{d.soThangKeoDai} tháng</strong>
+                        Kéo dài thêm: <strong className="font-mono font-black">{d.soThangKeoDai} tháng</strong>
                       </div>
                     </div>
                     <button
@@ -562,29 +576,30 @@ export const SalaryConfigView: React.FC<SalaryConfigViewProps> = ({
               </div>
 
               {/* Add discipline rule input */}
-              <div className="pt-2 border-t border-slate-100 space-y-2 text-xs">
+              <div className="pt-2 border-t border-slate-300/50 space-y-2 text-xs">
                 <input
                   type="text"
                   placeholder="Hình thức kỷ luật mới..."
                   value={newDisc.hinhThuc}
                   onChange={(e) => setNewDisc({ ...newDisc, hinhThuc: e.target.value })}
-                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg"
+                  className="w-full px-3 py-1.5 neu-input rounded-xl font-medium"
                 />
                 <div className="flex gap-2">
                   <select
                     value={newDisc.soThangKeoDai}
                     onChange={(e) => setNewDisc({ ...newDisc, soThangKeoDai: Number(e.target.value) })}
-                    className="w-32 px-2 py-1.5 border border-slate-300 rounded-lg"
+                    className="w-32 px-2.5 py-1.5 neu-input rounded-xl font-bold"
                   >
                     <option value={6}>Kéo dài 6T</option>
                     <option value={12}>Kéo dài 12T</option>
                   </select>
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
                     onClick={handleAddDiscRule}
-                    className="flex-1 px-3 py-1.5 bg-rose-700 hover:bg-rose-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-1"
+                    className="flex-1 px-3 py-1.5 neu-rose text-white font-black rounded-xl transition-all flex items-center justify-center gap-1 shadow-sm"
                   >
                     <Plus className="w-3.5 h-3.5" /> Thêm quy định
-                  </button>
+                  </motion.button>
                 </div>
               </div>
             </div>

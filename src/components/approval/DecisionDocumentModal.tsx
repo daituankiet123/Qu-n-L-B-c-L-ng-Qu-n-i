@@ -5,19 +5,18 @@ import {
   Copy,
   Check,
   FileText,
-  Download,
   Building,
   Stamp,
   Edit3,
   Save,
   RotateCcw,
   Sliders,
-  ChevronDown,
-  Plus,
-  Trash2,
+  Send,
+  Award,
 } from 'lucide-react';
 import {
   SalaryReviewCycle,
+  ToTrinhTongCucInfo,
   QuyetDinhTongCucInfo,
   TrichSaoDonViInfo,
   ReviewAllowanceScope,
@@ -29,8 +28,9 @@ interface DecisionDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
   cycle: SalaryReviewCycle;
-  defaultTab?: 'tongcuc' | 'trichsao';
+  defaultTab?: 'totrinh' | 'tongcuc' | 'trichsao';
   onUpdateCycleDocuments?: (
+    updatedToTrinh: ToTrinhTongCucInfo,
     updatedQd: QuyetDinhTongCucInfo,
     updatedTs: TrichSaoDonViInfo,
     scope: ReviewAllowanceScope
@@ -41,17 +41,63 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
   isOpen,
   onClose,
   cycle,
-  defaultTab = 'tongcuc',
+  defaultTab = 'totrinh',
   onUpdateCycleDocuments,
 }) => {
-  const [activeDocTab, setActiveDocTab] = useState<'tongcuc' | 'trichsao'>(defaultTab);
+  const [activeDocTab, setActiveDocTab] = useState<'totrinh' | 'tongcuc' | 'trichsao'>(defaultTab);
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [allowanceScope, setAllowanceScope] = useState<ReviewAllowanceScope>(
     cycle.loaiCheDo || 'Tổng hợp cả 3 chế độ'
   );
 
-  // Editable state for Document 1 (Quyết định của Tổng cục Hậu cần)
+  // Editable state for Document 1: TỜ TRÌNH XIN PHÊ DUYỆT TỔNG CỤC
+  // Yêu cầu: riêng phần tờ trình tổng cục duyệt thì chỗ ký phải là thủ trưởng Tổng cục Hậu Cần Ký
+  const [toTrinhData, setToTrinhData] = useState<ToTrinhTongCucInfo>({
+    soToTrinh: cycle.toTrinh?.soToTrinh || '89/TTr-HC2',
+    ngayTrinh: cycle.toTrinh?.ngayTrinh || '2026-03-15',
+    coQuanCapTren: cycle.toTrinh?.coQuanCapTren || 'BỘ QUỐC PHÒNG',
+    coQuanTongCuc: cycle.toTrinh?.coQuanTongCuc || 'TỔNG CỤC HẬU CẦN - KỸ THUẬT',
+    donViTrinh: cycle.toTrinh?.donViTrinh || 'TRƯỜNG CAO ĐẲNG HẬU CẦN 2',
+    tieuDeTrinh:
+      cycle.toTrinh?.tieuDeTrinh ||
+      'Về việc đề nghị phê duyệt nâng bậc lương, phụ cấp thâm niên nghề và phụ cấp thâm niên vượt khung cho Quân nhân chuyên nghiệp Đợt 1 năm 2026',
+    kinhGui: cycle.toTrinh?.kinhGui || [
+      'Thủ trưởng Tổng cục Hậu cần - Kỹ thuật;',
+      'Cục Cán bộ - Tổng cục Chính trị;',
+      'Cục Quân lực - Bộ Tổng Tham mưu.',
+    ],
+    canCu: cycle.toTrinh?.canCu || [
+      'Căn cứ Luật Quân nhân chuyên nghiệp, công nhân và viên chức quốc phòng năm 2015;',
+      'Căn cứ Nghị định số 204/2004/NĐ-CP và Nghị định số 73/2024/NĐ-CP của Chính phủ;',
+      'Căn cứ Thông tư số 170/2016/TT-BQP của Bộ Quốc phòng quy định cấp bậc quân hàm QNCN tương ứng với mức lương;',
+      'Căn cứ Biên bản họp xét nâng bậc lương của Hội đồng lương Trường Cao Đẳng Hậu cần 2 ngày 14/03/2026.',
+    ],
+    noiDungTrinh:
+      cycle.toTrinh?.noiDungTrinh ||
+      'Trường Cao Đẳng Hậu cần 2 kính trình Thủ trưởng Tổng cục Hậu cần xem xét, quyết định nâng bậc lương thường xuyên, nâng bậc lương trước thời hạn có thành tích xuất sắc, nâng phụ cấp thâm niên nghề và phụ cấp thâm niên vượt khung cho các đồng chí Quân nhân chuyên nghiệp đủ tiêu chuẩn, điều kiện đợt 1 năm 2026 (danh sách trích ngang kèm theo).',
+    nguoiKyTrinh: cycle.toTrinh?.nguoiKyTrinh || 'Đại tá Trần Hữu Nghĩa',
+    chucVuNguoiKyTrinh: cycle.toTrinh?.chucVuNguoiKyTrinh || 'Hiệu trưởng Trường Cao Đẳng Hậu cần 2',
+    capBacNguoiKyTrinh: cycle.toTrinh?.capBacNguoiKyTrinh || 'Đại tá',
+    // Khung phê duyệt chính thức: THỦ TRƯỞNG TỔNG CỤC HẬU CẦN KÝ DUYỆT
+    chucDanhPheDuyet:
+      cycle.toTrinh?.chucDanhPheDuyet || 'THỦ TRƯỞNG TỔNG CỤC HẬU CẦN PHÊ DUYỆT',
+    chucVuNguoiPheDuyet: cycle.toTrinh?.chucVuNguoiPheDuyet || 'Chủ nhiệm Tổng cục Hậu cần',
+    capBacNguoiPheDuyet: cycle.toTrinh?.capBacNguoiPheDuyet || 'Trung tướng',
+    nguoiPheDuyet: cycle.toTrinh?.nguoiPheDuyet || 'Nguyễn Văn Điều',
+    yKienPheDuyet:
+      cycle.toTrinh?.yKienPheDuyet ||
+      'Đồng ý phê duyệt nâng bậc lương, phụ cấp thâm niên nghề và phụ cấp thâm niên vượt khung cho các đồng chí Quân nhân chuyên nghiệp Trường Cao Đẳng Hậu cần 2 theo danh sách đề nghị. Giao Cục Cán bộ hoàn tất Quyết định ban hành.',
+    ngayPheDuyet: cycle.toTrinh?.ngayPheDuyet || '2026-03-22',
+    noiNhan: cycle.toTrinh?.noiNhan || [
+      'Như Kính gửi;',
+      'Phòng Chính trị;',
+      'Ban Quân lực;',
+      'Lưu: VT, HC2.',
+    ],
+  });
+
+  // Editable state for Document 2: QUYẾT ĐỊNH CỦA THỦ TRƯỞNG TỔNG CỤC HẬU CẦN
   const [qdData, setQdData] = useState<QuyetDinhTongCucInfo>({
     soQuyetDinh: cycle.quyetDinh?.soQuyetDinh || '318/QĐ-TCHC',
     ngayKy: cycle.quyetDinh?.ngayKy || '2026-03-24',
@@ -87,7 +133,7 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
     ],
   });
 
-  // Editable state for Document 2 (Bản Trích sao của Trường CĐ Hậu cần 2)
+  // Editable state for Document 3: BẢN TRÍCH SAO QUYẾT ĐỊNH CỦA TRƯỜNG CĐ HẬU CẦN 2
   const [tsData, setTsData] = useState<TrichSaoDonViInfo>({
     soTrichSao: cycle.trichSao?.soTrichSao || '52/TS-HC2',
     ngaySao: cycle.trichSao?.ngaySao || '2026-03-28',
@@ -129,7 +175,10 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
   };
 
   const handleCopyText = () => {
-    const elId = activeDocTab === 'tongcuc' ? 'doc-tongcuc-content' : 'doc-trichsao-content';
+    let elId = 'doc-totrinh-content';
+    if (activeDocTab === 'tongcuc') elId = 'doc-tongcuc-content';
+    if (activeDocTab === 'trichsao') elId = 'doc-trichsao-content';
+
     const text = document.getElementById(elId)?.innerText || '';
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -138,51 +187,75 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
 
   const handleSaveTemplateChanges = () => {
     if (onUpdateCycleDocuments) {
-      onUpdateCycleDocuments(qdData, tsData, allowanceScope);
+      onUpdateCycleDocuments(toTrinhData, qdData, tsData, allowanceScope);
     }
     setIsEditing(false);
-    alert('Đã lưu mẫu in thành công!');
+    alert('Đã lưu mẫu in thành công vào hệ thống!');
   };
 
   const handleScopeChange = (newScope: ReviewAllowanceScope) => {
     setAllowanceScope(newScope);
-    // Auto adjust trichYeu if default
+    // Tự động điều chỉnh tiêu đề phù hợp
     if (newScope === 'Phụ cấp thâm niên nghề') {
+      setToTrinhData((prev) => ({
+        ...prev,
+        tieuDeTrinh:
+          'Về việc đề nghị phê duyệt nâng mức hưởng phụ cấp thâm niên nghề đối với Quân nhân chuyên nghiệp Trường Cao Đẳng Hậu cần 2',
+      }));
       setQdData((prev) => ({
         ...prev,
-        trichYeu: 'Về việc nâng mức hưởng phụ cấp thâm niên nghề đối với Quân nhân chuyên nghiệp Trường Cao Đẳng Hậu cần 2',
+        trichYeu:
+          'Về việc nâng mức hưởng phụ cấp thâm niên nghề đối với Quân nhân chuyên nghiệp Trường Cao Đẳng Hậu cần 2',
       }));
     } else if (newScope === 'Phụ cấp thâm niên vượt khung') {
+      setToTrinhData((prev) => ({
+        ...prev,
+        tieuDeTrinh:
+          'Về việc đề nghị phê duyệt nâng phụ cấp thâm niên vượt khung đối với Quân nhân chuyên nghiệp Trường Cao Đẳng Hậu cần 2',
+      }));
       setQdData((prev) => ({
         ...prev,
-        trichYeu: 'Về việc nâng phụ cấp thâm niên vượt khung đối với Quân nhân chuyên nghiệp Trường Cao Đẳng Hậu cần 2',
+        trichYeu:
+          'Về việc nâng phụ cấp thâm niên vượt khung đối với Quân nhân chuyên nghiệp Trường Cao Đẳng Hậu cần 2',
       }));
     } else if (newScope === 'Nâng bậc lương & Vượt khung') {
+      setToTrinhData((prev) => ({
+        ...prev,
+        tieuDeTrinh:
+          'Về việc đề nghị phê duyệt nâng bậc lương và phụ cấp thâm niên vượt khung đối với Quân nhân chuyên nghiệp Trường Cao Đẳng Hậu cần 2',
+      }));
       setQdData((prev) => ({
         ...prev,
-        trichYeu: 'Về việc nâng bậc lương và phụ cấp thâm niên vượt khung đối với Quân nhân chuyên nghiệp Trường Cao Đẳng Hậu cần 2',
+        trichYeu:
+          'Về việc nâng bậc lương và phụ cấp thâm niên vượt khung đối với Quân nhân chuyên nghiệp Trường Cao Đẳng Hậu cần 2',
       }));
     } else {
+      setToTrinhData((prev) => ({
+        ...prev,
+        tieuDeTrinh:
+          'Về việc đề nghị phê duyệt nâng bậc lương, phụ cấp thâm niên nghề và phụ cấp thâm niên vượt khung cho Quân nhân chuyên nghiệp Đợt 1 năm 2026',
+      }));
       setQdData((prev) => ({
         ...prev,
-        trichYeu: 'Về việc nâng bậc lương, phụ cấp thâm niên nghề và phụ cấp thâm niên vượt khung đối với Quân nhân chuyên nghiệp Trường Cao Đẳng Hậu cần 2',
+        trichYeu:
+          'Về việc nâng bậc lương, phụ cấp thâm niên nghề và phụ cấp thâm niên vượt khung đối với Quân nhân chuyên nghiệp các đơn vị trực thuộc Tổng cục Hậu cần Đợt 1 năm 2026',
       }));
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/75 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-slate-200 overflow-hidden my-4 sm:my-6 flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-slate-200 overflow-hidden my-4 sm:my-6 flex flex-col max-h-[94vh]">
         {/* Top Control Bar (Hidden when printing) */}
         <div className="no-print bg-slate-900 px-5 py-3 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center gap-3">
             <SchoolLogo size={36} className="ring-1 ring-amber-400/40" />
             <div>
               <span className="font-bold text-sm text-white block">
-                Hệ Thống In Văn Bản & Bản Trích Sao Quân Đội
+                Hệ Thống Mẫu In & Bản Trích Sao Quân Đội
               </span>
               <span className="text-[11px] text-emerald-300">
-                Thủ trưởng Tổng cục Hậu cần ký Quyết định • Hiệu trưởng duyệt ký Bản Trích sao
+                Tờ trình Thủ trưởng Tổng cục duyệt ký • Quyết định Tổng cục • Bản Trích sao Hiệu trưởng ký
               </span>
             </div>
           </div>
@@ -193,7 +266,7 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
               onClick={() => setIsEditing(!isEditing)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 isEditing
-                  ? 'bg-amber-500 text-slate-950 shadow-sm'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm ring-2 ring-amber-300'
                   : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-400/30'
               }`}
             >
@@ -236,14 +309,14 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
           </div>
         </div>
 
-        {/* Scope Selector & Document Switcher Tabs (Hidden when printing) */}
+        {/* Scope Selector & 3 Document Tabs */}
         <div className="no-print bg-slate-100 p-2.5 border-b border-slate-200 space-y-2 flex-shrink-0">
-          {/* Allowance Scope Dropdown (Nâng bậc lương, Phụ cấp thâm niên, Vượt khung, hoặc Cả 3) */}
+          {/* Allowance Scope Dropdown */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1 text-xs">
             <div className="flex items-center gap-2">
               <span className="font-bold text-slate-700 flex items-center gap-1">
                 <Sliders className="w-3.5 h-3.5 text-emerald-700" />
-                Áp dụng văn bản cho chế độ:
+                Áp dụng văn bản cho:
               </span>
               <select
                 value={allowanceScope}
@@ -258,68 +331,442 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
             </div>
 
             <span className="text-[11px] text-slate-500">
-              * Tự động điều chỉnh tiêu đề, các điều khoản và bảng dữ liệu phụ lục
+              * Tùy chỉnh áp dụng cho từng chế độ phụ cấp thâm niên, vượt khung và nâng bậc lương
             </span>
           </div>
 
-          {/* 2 Document Switcher Buttons */}
-          <div className="flex gap-2">
+          {/* 3 Document Switcher Tabs */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {/* Tab 1: Tờ trình */}
+            <button
+              onClick={() => setActiveDocTab('totrinh')}
+              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-left ${
+                activeDocTab === 'totrinh'
+                  ? 'bg-blue-800 text-white shadow-sm ring-1 ring-blue-900'
+                  : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              <Send className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+              <div className="truncate">
+                <span className="block truncate font-bold">1. TỜ TRÌNH TỔNG CỤC</span>
+                <span className="text-[10px] block opacity-85">Thủ trưởng Tổng cục ký duyệt</span>
+              </div>
+            </button>
+
+            {/* Tab 2: Quyết định Tổng cục */}
             <button
               onClick={() => setActiveDocTab('tongcuc')}
-              className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-left ${
                 activeDocTab === 'tongcuc'
                   ? 'bg-emerald-800 text-white shadow-sm ring-1 ring-emerald-900'
                   : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
               }`}
             >
-              <Building className="w-4 h-4 text-amber-300" />
-              <span>1. QUYẾT ĐỊNH CỦA THỦ TRƯỞNG TỔNG CỤC HẬU CẦN</span>
-              <span className="text-[10px] bg-emerald-950/60 px-2 py-0.5 rounded-full text-emerald-200">
-                Thủ trưởng Tổng cục ký
-              </span>
+              <Building className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+              <div className="truncate">
+                <span className="block truncate font-bold">2. QUYẾT ĐỊNH TỔNG CỤC</span>
+                <span className="text-[10px] block opacity-85">Thủ trưởng Tổng cục ban hành</span>
+              </div>
             </button>
 
+            {/* Tab 3: Bản Trích sao */}
             <button
               onClick={() => setActiveDocTab('trichsao')}
-              className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-left ${
                 activeDocTab === 'trichsao'
                   ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-700'
                   : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
               }`}
             >
-              <Stamp className="w-4 h-4 text-amber-200" />
-              <span>2. BẢN TRÍCH SAO QUYẾT ĐỊNH (Hiệu trưởng duyệt chi trả)</span>
-              <span className="text-[10px] bg-amber-900/60 px-2 py-0.5 rounded-full text-amber-200">
-                Hiệu trưởng ký sao y
-              </span>
+              <Stamp className="w-3.5 h-3.5 text-amber-200 flex-shrink-0" />
+              <div className="truncate">
+                <span className="block truncate font-bold">3. BẢN TRÍCH SAO ĐƠN VỊ</span>
+                <span className="text-[10px] block opacity-85">Hiệu trưởng duyệt chi trả</span>
+              </div>
             </button>
           </div>
         </div>
 
-        {/* In-Line Editing Controls Bar (Active when isEditing is true) */}
+        {/* Notice Bar when editing is active */}
         {isEditing && (
-          <div className="no-print bg-amber-50 p-3 border-b border-amber-200 text-xs text-amber-950 flex flex-wrap items-center justify-between gap-3 animate-fadeIn flex-shrink-0">
+          <div className="no-print bg-amber-50 p-2.5 border-b border-amber-200 text-xs text-amber-950 flex flex-wrap items-center justify-between gap-3 animate-fadeIn flex-shrink-0">
             <div className="flex items-center gap-2">
               <span className="font-bold flex items-center gap-1 text-amber-900">
                 <Edit3 className="w-4 h-4 text-amber-700" />
-                Đang bật chế độ chỉnh sửa mẫu in:
+                Chế độ chỉnh sửa mẫu in đang bật:
               </span>
               <span className="text-[11px] text-amber-800">
-                Bạn có thể sửa trực tiếp số hiệu, ngày ký, tên người ký, chức danh và nội dung các điều bên dưới.
+                Bạn có thể sửa trực tiếp số hiệu văn bản, ngày tháng, tên người ký, chức vụ, nơi nhận và các điều khoản bên dưới.
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleSaveTemplateChanges}
-                className="px-3 py-1 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors flex items-center gap-1 shadow-xs"
-              >
-                <Save className="w-3.5 h-3.5" /> Lưu mẫu
-              </button>
+            <button
+              onClick={handleSaveTemplateChanges}
+              className="px-3 py-1 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+            >
+              <Save className="w-3.5 h-3.5" /> Lưu mẫu in
+            </button>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* DOCUMENT 1: TỜ TRÌNH XIN PHÊ DUYỆT TỔNG CỤC */}
+        {/* CHỖ KÝ PHÊ DUYỆT: THỦ TRƯỞNG TỔNG CỤC HẬU CẦN KÝ DUYỆT */}
+        {/* ========================================================================= */}
+        {activeDocTab === 'totrinh' && (
+          <div
+            id="doc-totrinh-content"
+            className="p-6 sm:p-10 text-slate-900 overflow-y-auto font-serif leading-relaxed text-sm bg-white flex-1"
+          >
+            {/* Header Block */}
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-4">
+              <div className="text-center sm:text-left flex items-start gap-3">
+                <SchoolLogo size={52} className="hidden sm:inline-block mt-0.5 print-only" />
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={toTrinhData.coQuanCapTren || 'BỘ QUỐC PHÒNG'}
+                        onChange={(e) => setToTrinhData({ ...toTrinhData, coQuanCapTren: e.target.value })}
+                        className="border border-amber-400 rounded px-1 text-xs"
+                      />
+                    ) : (
+                      toTrinhData.coQuanCapTren || 'BỘ QUỐC PHÒNG'
+                    )}
+                  </div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={toTrinhData.coQuanTongCuc || 'TỔNG CỤC HẬU CẦN - KỸ THUẬT'}
+                        onChange={(e) => setToTrinhData({ ...toTrinhData, coQuanTongCuc: e.target.value })}
+                        className="border border-amber-400 rounded px-1 text-xs"
+                      />
+                    ) : (
+                      toTrinhData.coQuanTongCuc || 'TỔNG CỤC HẬU CẦN - KỸ THUẬT'
+                    )}
+                  </div>
+                  <div className="text-xs font-black uppercase tracking-wide text-emerald-950 underline underline-offset-4 decoration-emerald-700">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={toTrinhData.donViTrinh || 'TRƯỜNG CAO ĐẲNG HẬU CẦN 2'}
+                        onChange={(e) => setToTrinhData({ ...toTrinhData, donViTrinh: e.target.value })}
+                        className="border border-amber-400 rounded px-1 text-xs font-bold"
+                      />
+                    ) : (
+                      toTrinhData.donViTrinh || 'TRƯỜNG CAO ĐẲNG HẬU CẦN 2'
+                    )}
+                  </div>
+                  <div className="text-xs mt-2 font-mono text-slate-700 font-sans flex items-center gap-1">
+                    <span>Số:</span>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={toTrinhData.soToTrinh}
+                        onChange={(e) => setToTrinhData({ ...toTrinhData, soToTrinh: e.target.value })}
+                        className="border border-amber-400 rounded px-1.5 py-0.5 font-bold font-mono text-xs w-32"
+                      />
+                    ) : (
+                      <strong className="font-bold text-blue-900">{toTrinhData.soToTrinh}</strong>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                  CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+                </div>
+                <div className="text-xs font-bold text-slate-800 underline underline-offset-4 decoration-slate-400">
+                  Độc lập - Tự do - Hạnh phúc
+                </div>
+                <div className="text-xs italic text-slate-600 mt-2 font-sans flex items-center justify-center gap-1">
+                  <span>TP. Hồ Chí Minh, ngày</span>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      value={toTrinhData.ngayTrinh}
+                      onChange={(e) => setToTrinhData({ ...toTrinhData, ngayTrinh: e.target.value })}
+                      className="border border-amber-400 rounded px-1 py-0.5 text-xs"
+                    />
+                  ) : (
+                    <span>
+                      {new Date(toTrinhData.ngayTrinh).getDate()} tháng {new Date(toTrinhData.ngayTrinh).getMonth() + 1} năm {new Date(toTrinhData.ngayTrinh).getFullYear()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-300 my-3" />
+
+            {/* Document Title: TỜ TRÌNH */}
+            <div className="text-center my-5 space-y-1">
+              <h2 className="text-base font-bold uppercase tracking-wide text-slate-900">
+                TỜ TRÌNH
+              </h2>
+              {isEditing ? (
+                <textarea
+                  rows={2}
+                  value={toTrinhData.tieuDeTrinh}
+                  onChange={(e) => setToTrinhData({ ...toTrinhData, tieuDeTrinh: e.target.value })}
+                  className="w-full text-center text-xs font-bold uppercase border border-amber-400 rounded p-1"
+                />
+              ) : (
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-800 max-w-xl mx-auto">
+                  {toTrinhData.tieuDeTrinh}
+                </p>
+              )}
+            </div>
+
+            {/* Kính gửi Section */}
+            <div className="my-4 text-xs font-semibold text-slate-800 space-y-1">
+              <div>
+                <strong>Kính gửi: </strong>
+              </div>
+              <div className="pl-6 space-y-0.5">
+                {toTrinhData.kinhGui.map((kg, i) => (
+                  <p key={i}>- {kg}</p>
+                ))}
+              </div>
+            </div>
+
+            {/* Legal grounds */}
+            <div className="space-y-1 text-xs italic text-slate-700 my-4">
+              {toTrinhData.canCu?.map((c, i) => (
+                <p key={i}>- {c}</p>
+              ))}
+            </div>
+
+            {/* Body Content */}
+            <div className="my-4 text-xs text-justify leading-relaxed">
+              {isEditing ? (
+                <textarea
+                  rows={4}
+                  value={toTrinhData.noiDungTrinh}
+                  onChange={(e) => setToTrinhData({ ...toTrinhData, noiDungTrinh: e.target.value })}
+                  className="w-full border border-amber-400 rounded p-2 text-xs"
+                />
+              ) : (
+                <p className="indent-6">{toTrinhData.noiDungTrinh}</p>
+              )}
+            </div>
+
+            {/* SUMMARY STATS OF NOMINATED PERSONNEL */}
+            <div className="my-4 p-3 bg-slate-50 border border-slate-300 rounded-lg text-xs space-y-1">
+              <div className="font-bold text-slate-800">Tổng hợp danh sách đề nghị phê duyệt ({approvedList.length} đồng chí):</div>
+              <ul className="list-disc pl-5 text-slate-700 space-y-0.5">
+                <li>Nâng bậc lương đúng niên hạn: {approvedList.filter((i) => i.loaiNangLuong === 'Đúng thời hạn').length} đồng chí</li>
+                <li>Nâng bậc lương trước thời hạn (có thành tích khen thưởng): {approvedList.filter((i) => i.loaiNangLuong === 'Trước thời hạn').length} đồng chí</li>
+                <li>Nâng phụ cấp thâm niên vượt khung: {approvedList.filter((i) => i.loaiNangLuong === 'Vượt khung').length} đồng chí</li>
+                <li>Hưởng và nâng mức phụ cấp thâm niên nghề Quân đội: {approvedList.length} đồng chí</li>
+              </ul>
+            </div>
+
+            <p className="text-xs italic text-slate-700 indent-6 my-3">
+              Trường Cao Đẳng Hậu cần 2 kính trình Thủ trưởng Tổng cục Hậu cần xem xét, quyết định phê duyệt./.
+            </p>
+
+            {/* ===================================================================== */}
+            {/* SIGNATURE SECTION: SCHOOL SUBMISSION + CRITICAL REQUIREMENT:          */}
+            {/* "riêng phần tờ trình tổng cục duyệt thì chỗ ký phải là thủ trưởng    */}
+            {/*  Tổng cục Hậu Cần Ký"                                                 */}
+            {/* ===================================================================== */}
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+              {/* Bên trái: Nơi nhận & Đơn vị lập tờ trình */}
+              <div className="space-y-4">
+                <div className="text-[11px] text-slate-600 space-y-1">
+                  <div className="font-bold italic text-slate-700">Nơi nhận:</div>
+                  {toTrinhData.noiNhan?.map((n, i) => (
+                    <div key={i}>- {n}</div>
+                  ))}
+                </div>
+
+                {/* Chữ ký của Đơn vị trình (Hiệu trưởng) */}
+                <div className="pt-2 text-center md:text-left">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                    HIỆU TRƯỞNG TRƯỜNG CĐ HẬU CẦN 2
+                  </div>
+                  <div className="text-[11px] italic text-slate-500 mb-14">
+                    (Ký tên, đóng dấu)
+                  </div>
+                  <div className="text-xs font-bold uppercase text-slate-900">
+                    {toTrinhData.nguoiKyTrinh}
+                  </div>
+                </div>
+              </div>
+
+              {/* BÊN PHẢI: KHUNG PHÊ DUYỆT CỦA THỦ TRƯỞNG TỔNG CỤC HẬU CẦN KÝ DUYỆT */}
+              <div className="p-4 bg-amber-50/70 border-2 border-amber-600/70 rounded-xl text-center relative shadow-xs">
+                <div className="absolute -top-3 left-4 bg-amber-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-xs">
+                  PHẦN PHÊ DUYỆT CỦA CẤP TRÊN
+                </div>
+
+                <div className="text-xs font-black uppercase tracking-wider text-slate-950 mt-1">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={toTrinhData.chucDanhPheDuyet}
+                      onChange={(e) => setToTrinhData({ ...toTrinhData, chucDanhPheDuyet: e.target.value })}
+                      className="border border-amber-400 rounded px-1.5 py-0.5 text-xs font-bold text-center w-full"
+                    />
+                  ) : (
+                    toTrinhData.chucDanhPheDuyet
+                  )}
+                </div>
+
+                <div className="text-[11px] font-bold text-amber-900 mt-1">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={toTrinhData.chucVuNguoiPheDuyet}
+                      onChange={(e) => setToTrinhData({ ...toTrinhData, chucVuNguoiPheDuyet: e.target.value })}
+                      className="border border-amber-400 rounded px-1.5 py-0.5 text-xs text-center w-full"
+                    />
+                  ) : (
+                    toTrinhData.chucVuNguoiPheDuyet
+                  )}
+                </div>
+
+                {/* Ý kiến phê duyệt */}
+                <div className="my-2.5 p-2 bg-white/90 border border-amber-200 rounded text-left text-[11px] text-slate-800 italic">
+                  <strong>Ý kiến phê duyệt: </strong>
+                  {isEditing ? (
+                    <textarea
+                      rows={2}
+                      value={toTrinhData.yKienPheDuyet}
+                      onChange={(e) => setToTrinhData({ ...toTrinhData, yKienPheDuyet: e.target.value })}
+                      className="w-full border border-amber-400 rounded p-1 text-xs mt-1 not-italic font-sans"
+                    />
+                  ) : (
+                    <span>"{toTrinhData.yKienPheDuyet}"</span>
+                  )}
+                </div>
+
+                <div className="text-[11px] italic text-slate-600 mb-14">
+                  (Ký tên, đóng dấu Tổng cục Hậu cần)
+                </div>
+
+                {/* Người ký duyệt: THỦ TRƯỞNG TỔNG CỤC HẬU CẦN KÝ */}
+                <div className="text-xs font-black uppercase text-slate-950 border-t border-amber-200 pt-2">
+                  {isEditing ? (
+                    <div className="flex gap-2 justify-center">
+                      <input
+                        type="text"
+                        value={toTrinhData.capBacNguoiPheDuyet}
+                        onChange={(e) => setToTrinhData({ ...toTrinhData, capBacNguoiPheDuyet: e.target.value })}
+                        className="border border-amber-400 rounded px-1 py-0.5 text-xs w-24 text-center font-bold"
+                      />
+                      <input
+                        type="text"
+                        value={toTrinhData.nguoiPheDuyet}
+                        onChange={(e) => setToTrinhData({ ...toTrinhData, nguoiPheDuyet: e.target.value })}
+                        className="border border-amber-400 rounded px-1 py-0.5 text-xs text-center font-bold"
+                      />
+                    </div>
+                  ) : (
+                    <span>
+                      {toTrinhData.capBacNguoiPheDuyet ? `${toTrinhData.capBacNguoiPheDuyet} ` : ''}
+                      {toTrinhData.nguoiPheDuyet}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Appendix Table */}
+            <div className="mt-12 pt-6 border-t-2 border-slate-300">
+              <div className="text-center mb-4 space-y-1">
+                <h3 className="text-xs font-bold uppercase text-slate-900">
+                  DANH SÁCH TRÍCH NGANG QUÂN NHÂN CHUYÊN NGHIỆP ĐỀ NGHỊ PHÊ DUYỆT
+                  {allowanceScope === 'Phụ cấp thâm niên nghề' && ' PHỤ CẤP THÂM NIÊN NGHỀ'}
+                  {allowanceScope === 'Phụ cấp thâm niên vượt khung' && ' PHỤ CẤP THÂM NIÊN VƯỢT KHUNG'}
+                  {allowanceScope === 'Nâng bậc lương & Vượt khung' && ' NÂNG BẬC LƯƠNG & VƯỢT KHUNG'}
+                  {allowanceScope === 'Tổng hợp cả 3 chế độ' && ' NÂNG BẬC LƯƠNG, THÂM NIÊN VÀ VƯỢT KHUNG'}
+                </h3>
+                <p className="text-[11px] italic text-slate-600">
+                  (Kèm theo Tờ trình số {toTrinhData.soToTrinh} ngày {toTrinhData.ngayTrinh} của Hiệu trưởng Trường CĐHC2)
+                </p>
+              </div>
+
+              <table className="w-full text-left text-[11px] border-collapse border border-slate-400 font-sans">
+                <thead>
+                  <tr className="bg-slate-100 font-bold text-slate-800 text-center">
+                    <th className="border border-slate-400 p-2">STT</th>
+                    <th className="border border-slate-400 p-2">Họ và tên</th>
+                    <th className="border border-slate-400 p-2">Số hiệu</th>
+                    <th className="border border-slate-400 p-2">Cấp bậc</th>
+                    <th className="border border-slate-400 p-2">Chức vụ - Đơn vị</th>
+                    {allowanceScope !== 'Phụ cấp thâm niên nghề' && (
+                      <>
+                        <th className="border border-slate-400 p-2">Bậc & HS cũ</th>
+                        <th className="border border-slate-400 p-2">Bậc & HS đề xuất</th>
+                      </>
+                    )}
+                    {(allowanceScope === 'Phụ cấp thâm niên nghề' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
+                      <th className="border border-slate-400 p-2">% Thâm niên</th>
+                    )}
+                    {(allowanceScope === 'Phụ cấp thâm niên vượt khung' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
+                      <th className="border border-slate-400 p-2">% Vượt khung</th>
+                    )}
+                    <th className="border border-slate-400 p-2">Ngày hưởng</th>
+                    <th className="border border-slate-400 p-2">Lý do đề xuất</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {approvedList.map((item, idx) => (
+                    <tr key={item.id} className="text-slate-800">
+                      <td className="border border-slate-400 p-2 text-center font-mono">{idx + 1}</td>
+                      <td className="border border-slate-400 p-2 font-bold">{item.hoVaTen}</td>
+                      <td className="border border-slate-400 p-2 font-mono text-center">{item.maQNCN}</td>
+                      <td className="border border-slate-400 p-2 text-center">{item.capBac}</td>
+                      <td className="border border-slate-400 p-2">
+                        {item.chucVu} - {item.donVi}
+                      </td>
+
+                      {allowanceScope !== 'Phụ cấp thâm niên nghề' && (
+                        <>
+                          <td className="border border-slate-400 p-2 text-center">
+                            Bậc {item.bacHienTai} ({item.heSoHienTai.toFixed(2)})
+                          </td>
+                          <td className="border border-slate-400 p-2 text-center font-bold text-blue-900 bg-blue-50/40">
+                            {item.loaiNangLuong === 'Vượt khung'
+                              ? `VK ${item.vuotKhungDeXuat}%`
+                              : `Bậc ${item.bacDeXuat} (${item.heSoDeXuat.toFixed(2)})`}
+                          </td>
+                        </>
+                      )}
+
+                      {(allowanceScope === 'Phụ cấp thâm niên nghề' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
+                        <td className="border border-slate-400 p-2 text-center font-mono font-bold text-emerald-800 bg-emerald-50/40">
+                          24%
+                        </td>
+                      )}
+
+                      {(allowanceScope === 'Phụ cấp thâm niên vượt khung' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
+                        <td className="border border-slate-400 p-2 text-center font-mono font-bold text-purple-900 bg-purple-50/40">
+                          {item.vuotKhungDeXuat > 0 ? `${item.vuotKhungDeXuat}%` : '-'}
+                        </td>
+                      )}
+
+                      <td className="border border-slate-400 p-2 text-center font-mono">
+                        {item.ngayHuongMoi}
+                      </td>
+                      <td className="border border-slate-400 p-2 text-xs">
+                        {item.lyDoDeXuat}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
 
-        {/* DOCUMENT 1: QUYẾT ĐỊNH CỦA THỦ TRƯỞNG TỔNG CỤC HẬU CẦN */}
+        {/* ========================================================================= */}
+        {/* DOCUMENT 2: QUYẾT ĐỊNH CỦA THỦ TRƯỞNG TỔNG CỤC HẬU CẦN                   */}
+        {/* ========================================================================= */}
         {activeDocTab === 'tongcuc' && (
           <div
             id="doc-tongcuc-content"
@@ -602,7 +1049,9 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
           </div>
         )}
 
-        {/* DOCUMENT 2: BẢN TRÍCH SAO QUYẾT ĐỊNH CỦA HIỆU TRƯỞNG TRƯỜNG CĐ HẬU CẦN 2 */}
+        {/* ========================================================================= */}
+        {/* DOCUMENT 3: BẢN TRÍCH SAO QUYẾT ĐỊNH CỦA HIỆU TRƯỞNG TRƯỜNG CĐ HẬU CẦN 2 */}
+        {/* ========================================================================= */}
         {activeDocTab === 'trichsao' && (
           <div
             id="doc-trichsao-content"

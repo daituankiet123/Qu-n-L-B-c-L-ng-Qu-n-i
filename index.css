@@ -2,32 +2,135 @@
 
 @layer base {
   body {
-    background-color: #f8fafc;
+    background-color: #e9eef5;
     color: #1e293b;
     font-family: 'Be Vietnam Pro', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
   }
 }
 
-/* Custom scrollbars for data tables */
+/* ==========================================================================
+   NEUMORPHISM (SOFT UI) DESIGN SYSTEM UTILITIES
+   ========================================================================== */
+
+/* Extruded Neumorphic Flat Card */
+.neu-flat {
+  background: #e9eef5;
+  box-shadow: 7px 7px 16px #cbd5e1, -7px -7px 16px #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.neu-flat-sm {
+  background: #e9eef5;
+  box-shadow: 4px 4px 10px #cbd5e1, -4px -4px 10px #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.neu-flat-lg {
+  background: #e9eef5;
+  box-shadow: 10px 10px 24px #cbd5e1, -10px -10px 24px #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Inset / Pressed Neumorphic Well */
+.neu-pressed {
+  background: #e5ebf2;
+  box-shadow: inset 4px 4px 8px #cad4e2, inset -4px -4px 8px #ffffff;
+  border: 1px solid rgba(202, 212, 226, 0.45);
+}
+
+.neu-pressed-sm {
+  background: #e5ebf2;
+  box-shadow: inset 2px 2px 5px #cad4e2, inset -2px -2px 5px #ffffff;
+}
+
+/* Convex (Soft Bulb / Raised button) */
+.neu-convex {
+  background: linear-gradient(145deg, #f2f7fc, #e2e8ef);
+  box-shadow: 5px 5px 12px #cbd5e1, -5px -5px 12px #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+/* Concave (Soft Indent) */
+.neu-concave {
+  background: linear-gradient(145deg, #e2e8ef, #f2f7fc);
+  box-shadow: 5px 5px 12px #cbd5e1, -5px -5px 12px #ffffff;
+}
+
+/* Neumorphic Input Fields */
+.neu-input {
+  background: #e6ecf3;
+  box-shadow: inset 3px 3px 6px #cad4e2, inset -3px -3px 6px #ffffff;
+  border: 1px solid rgba(202, 212, 226, 0.5);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.neu-input:focus {
+  background: #ebf1f8;
+  box-shadow: inset 3px 3px 7px #cad4e2, inset -3px -3px 7px #ffffff, 0 0 0 2px rgba(16, 185, 129, 0.4);
+  outline: none;
+}
+
+/* Accent Neumorphic Buttons */
+.neu-emerald {
+  background: linear-gradient(145deg, #065f46, #047857);
+  box-shadow: 6px 6px 14px #cbd5e1, -4px -4px 12px #ffffff, 0 6px 20px rgba(5, 150, 105, 0.3);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+}
+
+.neu-amber {
+  background: linear-gradient(145deg, #d97706, #f59e0b);
+  box-shadow: 6px 6px 14px #cbd5e1, -4px -4px 12px #ffffff, 0 6px 20px rgba(245, 158, 11, 0.3);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+}
+
+.neu-rose {
+  background: linear-gradient(145deg, #be123c, #e11d48);
+  box-shadow: 6px 6px 14px #cbd5e1, -4px -4px 12px #ffffff, 0 6px 20px rgba(225, 29, 72, 0.3);
+  border: 1px solid rgba(251, 113, 133, 0.35);
+}
+
+/* Liquid Pill Ripple */
+@keyframes liquidPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+.liquid-pulse {
+  animation: liquidPulse 3s ease-in-out infinite;
+}
+
+/* Smooth Soft Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #e2e8f0;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: #94a3b8;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #64748b;
 }
 
+/* Print Optimization */
 @media print {
+  body {
+    background: #ffffff !important;
+  }
   .no-print {
     display: none !important;
   }

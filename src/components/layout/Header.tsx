@@ -1,5 +1,15 @@
 import React from 'react';
-import { Shield, Award, Database, RefreshCw, Download, Upload, AlertCircle } from 'lucide-react';
+import { motion } from 'motion/react';
+import {
+  Shield,
+  Award,
+  Database,
+  RefreshCw,
+  Download,
+  Upload,
+  AlertCircle,
+  Sparkles,
+} from 'lucide-react';
 import { formatVND } from '../../services/salaryCalculator';
 import { GeneralSalaryRules } from '../../types';
 import { SchoolLogo } from '../common/SchoolLogo';
@@ -22,23 +32,34 @@ export const Header: React.FC<HeaderProps> = ({
   onImportBackup,
 }) => {
   return (
-    <header className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-slate-900 text-white shadow-lg border-b border-emerald-800">
+    <header className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-slate-900 text-white shadow-xl border-b border-emerald-800/80 relative z-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between py-4 gap-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between py-3.5 gap-4">
           {/* Logo & School Title */}
           <div className="flex items-center space-x-3.5">
-            <SchoolLogo size={56} className="ring-2 ring-amber-400/50 hover:scale-105 transition-transform" />
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            >
+              <SchoolLogo
+                size={54}
+                className="ring-2 ring-amber-400/50 shadow-lg cursor-pointer"
+              />
+            </motion.div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-300 bg-amber-950/70 px-2 py-0.5 rounded-full border border-amber-500/30">
                   Tổng cục Hậu cần - Kỹ thuật
                 </span>
-                <span className="text-[11px] text-emerald-200 hidden sm:inline">Trường Cao Đẳng Hậu cần 2</span>
+                <span className="text-[11px] text-emerald-200 hidden sm:inline font-medium">
+                  Trường Cao Đẳng Hậu cần 2
+                </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2 mt-0.5">
                 QNCN BẬC LƯƠNG
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-700/80 text-emerald-100 border border-emerald-500/40">
-                  Phiên bản 2026
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-700/90 text-amber-300 border border-emerald-500/40 font-mono">
+                  Soft-UI 2026
                 </span>
               </h1>
               <p className="text-xs text-emerald-200/90 font-medium">
@@ -47,20 +68,24 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Quick Metrics & System Controls */}
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Quick Metrics & Neumorphic Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5">
             {/* Base salary pill */}
-            <div className="bg-emerald-950/70 border border-emerald-700/60 rounded-lg px-3 py-1.5 text-right">
-              <div className="text-[10px] text-emerald-300 uppercase tracking-wide">Mức lương cơ sở</div>
-              <div className="text-sm font-bold text-amber-300 font-mono">
+            <div className="bg-emerald-950/80 border border-emerald-700/60 rounded-xl px-3 py-1.5 text-right shadow-inner">
+              <div className="text-[10px] text-emerald-300 uppercase tracking-wide font-semibold">
+                Mức lương cơ sở
+              </div>
+              <div className="text-sm font-black text-amber-300 font-mono">
                 {formatVND(rules.luongCoSo)}
               </div>
             </div>
 
             {/* Personnel Count */}
-            <div className="bg-emerald-950/70 border border-emerald-700/60 rounded-lg px-3 py-1.5 text-right">
-              <div className="text-[10px] text-emerald-300 uppercase tracking-wide">Quân số QNCN</div>
-              <div className="text-sm font-bold text-white font-mono flex items-center justify-end gap-1">
+            <div className="bg-emerald-950/80 border border-emerald-700/60 rounded-xl px-3 py-1.5 text-right shadow-inner">
+              <div className="text-[10px] text-emerald-300 uppercase tracking-wide font-semibold">
+                Quân số QNCN
+              </div>
+              <div className="text-sm font-black text-white font-mono flex items-center justify-end gap-1">
                 <Database className="w-3.5 h-3.5 text-emerald-400" />
                 {totalQNCN} đ/c
               </div>
@@ -68,42 +93,55 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Pending alert */}
             {dueForReviewCount > 0 && (
-              <div className="bg-amber-950/80 border border-amber-600/60 rounded-lg px-3 py-1.5 text-right">
-                <div className="text-[10px] text-amber-300 uppercase tracking-wide flex items-center gap-1">
+              <motion.div
+                initial={{ scale: 0.95 }}
+                animate={{ scale: [1, 1.02, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="bg-amber-950/90 border border-amber-500/60 rounded-xl px-3 py-1.5 text-right shadow-inner"
+              >
+                <div className="text-[10px] text-amber-300 uppercase tracking-wide font-bold flex items-center gap-1">
                   <AlertCircle className="w-3 h-3 text-amber-400" /> Đến hạn xét
                 </div>
-                <div className="text-sm font-bold text-amber-300 font-mono">
+                <div className="text-sm font-black text-amber-300 font-mono">
                   {dueForReviewCount} hồ sơ
                 </div>
-              </div>
+              </motion.div>
             )}
 
-            {/* Backup / Restore dropdown / buttons */}
+            {/* Tactile System Buttons */}
             <div className="flex items-center gap-1.5 pl-2 border-l border-emerald-800">
-              <button
+              <motion.button
+                whileHover={{ y: -1.5, scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={onExportBackup}
                 title="Sao lưu toàn bộ dữ liệu (JSON)"
-                className="p-2 rounded-lg bg-emerald-800/60 hover:bg-emerald-700 text-emerald-200 hover:text-white transition-colors border border-emerald-600/40 text-xs flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 hover:text-white transition-all border border-emerald-600/40 text-xs font-bold flex items-center gap-1 shadow-sm"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span className="hidden lg:inline">Sao lưu</span>
-              </button>
-              <button
+              </motion.button>
+
+              <motion.button
+                whileHover={{ y: -1.5, scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={onImportBackup}
                 title="Phục hồi dữ liệu từ file sao lưu"
-                className="p-2 rounded-lg bg-emerald-800/60 hover:bg-emerald-700 text-emerald-200 hover:text-white transition-colors border border-emerald-600/40 text-xs flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 hover:text-white transition-all border border-emerald-600/40 text-xs font-bold flex items-center gap-1 shadow-sm"
               >
                 <Upload className="w-3.5 h-3.5" />
                 <span className="hidden lg:inline">Phục hồi</span>
-              </button>
-              <button
+              </motion.button>
+
+              <motion.button
+                whileHover={{ y: -1.5, scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={onResetDefaults}
                 title="Khôi phục dữ liệu gốc chuẩn Trường CĐHC2"
-                className="p-2 rounded-lg bg-emerald-900/60 hover:bg-rose-900/60 text-slate-300 hover:text-rose-200 transition-colors border border-emerald-700/50 text-xs flex items-center gap-1"
+                className="p-1.5 rounded-xl bg-emerald-950/70 hover:bg-rose-900/70 text-slate-300 hover:text-rose-200 transition-all border border-emerald-700/50 text-xs flex items-center gap-1"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline">Dữ liệu gốc</span>
-              </button>
+                <span className="hidden xl:inline text-[11px] font-semibold">Dữ liệu gốc</span>
+              </motion.button>
             </div>
           </div>
         </div>

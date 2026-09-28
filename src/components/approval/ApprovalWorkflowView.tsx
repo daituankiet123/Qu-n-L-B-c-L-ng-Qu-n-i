@@ -40,7 +40,7 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
 }) => {
   const [selectedCycleId, setSelectedCycleId] = useState<string>(cycles[0]?.id || '');
   const [showDocModal, setShowDocModal] = useState(false);
-  const [modalDefaultTab, setModalDefaultTab] = useState<'tongcuc' | 'trichsao'>('tongcuc');
+  const [modalDefaultTab, setModalDefaultTab] = useState<'totrinh' | 'tongcuc' | 'trichsao'>('totrinh');
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
 
   const cycle = cycles.find((c) => c.id === selectedCycleId) || cycles[0];
@@ -86,18 +86,20 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
     onSaveCycle(updated);
   };
 
-  const handleOpenDocModal = (tab: 'tongcuc' | 'trichsao') => {
+  const handleOpenDocModal = (tab: 'totrinh' | 'tongcuc' | 'trichsao') => {
     setModalDefaultTab(tab);
     setShowDocModal(true);
   };
 
   const handleUpdateCycleDocuments = (
+    updatedToTrinh: any,
     updatedQd: any,
     updatedTs: any,
     scope: any
   ) => {
     const updated = {
       ...cycle,
+      toTrinh: updatedToTrinh,
       quyetDinh: updatedQd,
       trichSao: updatedTs,
       loaiCheDo: scope,
@@ -148,11 +150,19 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
           </select>
 
           <button
+            onClick={() => handleOpenDocModal('totrinh')}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-800 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-colors"
+          >
+            <FileText className="w-4 h-4 text-amber-300" />
+            1. Tờ trình Tổng cục duyệt
+          </button>
+
+          <button
             onClick={() => handleOpenDocModal('tongcuc')}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition-colors"
           >
             <Building className="w-4 h-4 text-amber-300" />
-            1. In Tờ trình gửi Tổng cục
+            2. Quyết định Tổng cục
           </button>
 
           <button
@@ -160,7 +170,7 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-xs transition-colors"
           >
             <Stamp className="w-4 h-4 text-amber-100" />
-            2. In Bản Trích sao Hiệu trưởng
+            3. Bản Trích sao Đơn vị
           </button>
         </div>
       </div>
@@ -173,26 +183,32 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
           </div>
           <div>
             <h4 className="text-sm font-bold text-amber-300 flex items-center gap-2">
-              Thể thức hành chính 2 cấp: Quyết định Tổng cục & Bản Trích sao Đơn vị
+              Thể thức hành chính Quân đội: Tờ trình phê duyệt • Quyết định Tổng cục • Bản Trích sao Đơn vị
             </h4>
             <p className="text-xs text-emerald-100 mt-0.5 leading-relaxed">
-              Theo quy định phân cấp Quân đội: <strong>Thủ trưởng Tổng cục Hậu cần</strong> là cấp có thẩm quyền ký Quyết định nâng bậc lương. Sau khi có Quyết định phê duyệt từ Tổng cục gửi về Trường, <strong>Hiệu trưởng Trường Cao Đẳng Hậu cần 2</strong> ký duyệt <strong>BẢN TRÍCH SAO QUYẾT ĐỊNH</strong> để Ban Tài chính chi trả và lưu vào hồ sơ quân nhân.
+              Theo quy định phân cấp: <strong>Thủ trưởng Tổng cục Hậu cần</strong> là cấp có thẩm quyền phê duyệt Tờ trình và ký Quyết định nâng bậc lương. Sau khi có Quyết định từ Tổng cục gửi về Trường, <strong>Hiệu trưởng Trường Cao Đẳng Hậu cần 2</strong> duyệt ký <strong>BẢN TRÍCH SAO QUYẾT ĐỊNH</strong> để Ban Tài chính chi trả và lưu vào hồ sơ cán bộ.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => handleOpenDocModal('totrinh')}
+            className="px-3 py-1.5 rounded-lg bg-blue-800 hover:bg-blue-700 text-white text-xs font-semibold border border-blue-600 transition-colors"
+          >
+            1. Tờ trình Tổng cục
+          </button>
           <button
             onClick={() => handleOpenDocModal('tongcuc')}
             className="px-3 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-semibold border border-emerald-600 transition-colors"
           >
-            Xem Tờ trình Tổng cục
+            2. Quyết định Tổng cục
           </button>
           <button
             onClick={() => handleOpenDocModal('trichsao')}
             className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-emerald-950 text-xs font-bold transition-colors shadow-sm"
           >
-            Xem Bản Trích sao
+            3. Bản Trích sao
           </button>
         </div>
       </div>
@@ -359,14 +375,49 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
           </div>
         </div>
 
-        {/* Right Col: 2 Document Metadata Details */}
-        <div className="space-y-6">
-          {/* Document 1: Tờ trình & Quyết định Tổng cục Card */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+        {/* Right Col: 3 Document Metadata Details */}
+        <div className="space-y-4">
+          {/* Document 1: Tờ trình trình Tổng cục phê duyệt */}
+          <div className="bg-white rounded-xl border border-blue-200 shadow-xs p-5 space-y-3 bg-blue-50/20">
+            <div className="flex items-center justify-between pb-2 border-b border-blue-200">
+              <h4 className="text-xs font-bold text-blue-950 uppercase tracking-wider flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-blue-700" />
+                1. Tờ trình gửi Tổng cục phê duyệt
+              </h4>
+              <button
+                onClick={() => handleOpenDocModal('totrinh')}
+                className="text-[11px] font-bold text-blue-700 hover:underline flex items-center gap-1"
+              >
+                <Printer className="w-3.5 h-3.5" /> Mở bản in
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Số Tờ trình:</span>
+                <span className="font-bold text-blue-900 font-mono">{cycle.toTrinh?.soToTrinh || '89/TTr-HC2'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Đơn vị trình:</span>
+                <span className="font-semibold text-slate-800">{cycle.toTrinh?.donViTrinh || 'Trường Cao Đẳng Hậu cần 2'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Người ký trình:</span>
+                <span className="font-medium text-slate-800">{cycle.toTrinh?.nguoiKyTrinh || 'Đại tá Trần Hữu Nghĩa'}</span>
+              </div>
+              <div className="flex justify-between bg-amber-50 p-1.5 rounded border border-amber-200">
+                <span className="text-amber-900 font-bold">Thủ trưởng Tổng cục duyệt:</span>
+                <span className="font-black text-amber-900">{cycle.toTrinh?.nguoiPheDuyet || 'Trung tướng Nguyễn Văn Điều'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Document 2: Quyết định Tổng cục Card */}
+          <div className="bg-white rounded-xl border border-emerald-200 shadow-xs p-5 space-y-3 bg-emerald-50/20">
+            <div className="flex items-center justify-between pb-2 border-b border-emerald-200">
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                 <Building className="w-4 h-4 text-emerald-700" />
-                1. Quyết định Tổng cục Hậu cần
+                2. Quyết định Tổng cục Hậu cần
               </h4>
               <button
                 onClick={() => handleOpenDocModal('tongcuc')}
@@ -377,10 +428,6 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
             </div>
 
             <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Số Tờ trình đơn vị:</span>
-                <span className="font-bold text-slate-800 font-mono">{cycle.toTrinh?.soToTrinh || '89/TTr-HC2'}</span>
-              </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Số Quyết định Tổng cục:</span>
                 <span className="font-bold text-emerald-800 font-mono">{cycle.quyetDinh?.soQuyetDinh || '318/QĐ-TCHC'}</span>
@@ -396,12 +443,12 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
             </div>
           </div>
 
-          {/* Document 2: Bản Trích sao Đơn vị Card */}
+          {/* Document 3: Bản Trích sao Đơn vị Card */}
           <div className="bg-white rounded-xl border border-amber-200 shadow-xs p-5 space-y-3 bg-amber-50/30">
             <div className="flex items-center justify-between pb-2 border-b border-amber-200">
               <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
                 <Stamp className="w-4 h-4 text-amber-600" />
-                2. Bản Trích sao Trường CĐHC2
+                3. Bản Trích sao Trường CĐHC2
               </h4>
               <button
                 onClick={() => handleOpenDocModal('trichsao')}

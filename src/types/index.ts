@@ -146,10 +146,24 @@ export interface CouncilMember {
 export interface ToTrinhTongCucInfo {
   soToTrinh: string;
   ngayTrinh: string;
+  coQuanCapTren?: string;
+  coQuanTongCuc?: string;
+  donViTrinh?: string;
+  tieuDeTrinh?: string;
+  kinhGui: string[];
+  canCu?: string[];
+  noiDungTrinh: string;
   nguoiKyTrinh: string;
   chucVuNguoiKyTrinh: string;
-  kinhGui: string[];
-  noiDungTrinh: string;
+  capBacNguoiKyTrinh?: string;
+  // Khung phê duyệt của Thủ trưởng Tổng cục Hậu cần ký duyệt
+  chucDanhPheDuyet: string; // "THỦ TRƯỞNG TỔNG CỤC HẬU CẦN PHÊ DUYỆT"
+  chucVuNguoiPheDuyet: string; // "Chủ nhiệm Tổng cục Hậu cần"
+  capBacNguoiPheDuyet?: string; // "Trung tướng"
+  nguoiPheDuyet: string; // "Nguyễn Văn Điều"
+  yKienPheDuyet: string;
+  ngayPheDuyet: string;
+  noiNhan?: string[];
 }
 
 export interface QuyetDinhTongCucInfo {
@@ -248,4 +262,39 @@ export interface PayrollRecord {
   
   // Thực lĩnh
   thucLinh: number;
+}
+
+export type AuditLogCategory = 
+  | 'Hồ sơ QNCN'
+  | 'Cấu hình Lương'
+  | 'Phê duyệt & Trích sao'
+  | 'Hệ thống & Dữ liệu';
+
+export type AuditLogAction = 
+  | 'IMPORT_PERSONNEL'
+  | 'ADD_PERSONNEL'
+  | 'UPDATE_PERSONNEL'
+  | 'DELETE_PERSONNEL'
+  | 'UPDATE_SALARY_RULES'
+  | 'UPDATE_SALARY_SCALE'
+  | 'CREATE_REVIEW_CYCLE'
+  | 'UPDATE_REVIEW_CYCLE'
+  | 'APPROVE_CYCLE_STAGE'
+  | 'FINALIZE_PROMOTION'
+  | 'RESET_SYSTEM'
+  | 'BACKUP_EXPORT'
+  | 'BACKUP_IMPORT';
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string; // ISO String
+  nguoiThucHien: string; // e.g. "Ban Quân lực", "Hiệu trưởng", "Quản trị viên"
+  chucVuNguoiThucHien?: string;
+  chuyenMuc: AuditLogCategory;
+  loaiHanhDong: AuditLogAction;
+  hanhDong: string; // e.g. "Import dữ liệu QNCN"
+  chiTiet: string; // e.g. "Import thành công 15 hồ sơ quân nhân từ file Excel"
+  doiTuongLienQuan?: string; // e.g. "QĐ: 318/QĐ-TCHC, Bản Trích sao: 52/TS-HC2"
+  mucDo: 'THÔNG TIN' | 'CẢNH BÁO' | 'QUAN TRỌNG';
+  diaChiIP?: string;
 }

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import {
   LayoutDashboard,
   Users,
@@ -6,8 +7,9 @@ import {
   CalendarCheck2,
   FileCheck2,
   Receipt,
-  GraduationCap,
+  Droplets,
   Sparkles,
+  ChevronRight,
 } from 'lucide-react';
 import { SchoolLogo } from '../common/SchoolLogo';
 
@@ -30,12 +32,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onTabChange,
   pendingReviewsCount,
 }) => {
+  const [hoveredTab, setHoveredTab] = useState<ActiveTab | null>(null);
+
   const menuItems = [
     {
       id: 'dashboard' as ActiveTab,
       label: 'Tổng quan & Chỉ số',
       icon: LayoutDashboard,
       badge: null,
+      desc: 'Báo cáo & điều hành',
     },
     {
       id: 'personnel' as ActiveTab,
@@ -43,13 +48,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Users,
       badge: 'Excel Import',
       badgeColor: 'bg-emerald-100 text-emerald-800',
+      desc: 'Quân số toàn trường',
     },
     {
       id: 'salary-config' as ActiveTab,
       label: 'Quy chế & Bảng hệ số',
       icon: Sliders,
       badge: 'Nhập tay',
-      badgeColor: 'bg-amber-100 text-amber-800',
+      badgeColor: 'bg-amber-100 text-amber-900',
+      desc: 'Tùy biến tham số 100%',
     },
     {
       id: 'review-cycles' as ActiveTab,
@@ -57,6 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: CalendarCheck2,
       badge: pendingReviewsCount > 0 ? `${pendingReviewsCount}` : null,
       badgeColor: 'bg-rose-500 text-white',
+      desc: 'Quét niên hạn tự động',
     },
     {
       id: 'approval' as ActiveTab,
@@ -64,69 +72,138 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: FileCheck2,
       badge: '2 Quyết định',
       badgeColor: 'bg-amber-100 text-amber-900 border border-amber-300 font-bold',
+      desc: 'Quy trình chuẩn BQP',
     },
     {
       id: 'payroll-sheet' as ActiveTab,
       label: 'Bảng thanh toán lương',
       icon: Receipt,
       badge: null,
+      desc: 'Tính lương & Phiếu lương',
     },
   ];
 
   return (
-    <aside className="w-full lg:w-64 bg-white border-b lg:border-b-0 lg:border-r border-slate-200 flex-shrink-0 flex flex-col justify-between">
-      <div className="p-4 space-y-1">
-        <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-          Chức năng nghiệp vụ
+    <aside className="w-full lg:w-72 flex-shrink-0 flex flex-col justify-between space-y-4">
+      {/* Neumorphic Navigation Card */}
+      <div className="neu-flat rounded-3xl p-4 sm:p-5 space-y-2 relative overflow-hidden">
+        {/* Subtle decorative glow */}
+        <div className="flex items-center justify-between px-3 py-1.5 mb-1">
+          <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <Droplets className="w-3.5 h-3.5 text-emerald-700" />
+            Nghiệp vụ Tiền lương
+          </span>
+          <span className="text-[10px] font-semibold text-emerald-800 px-2 py-0.5 rounded-full neu-pressed">
+            Hậu cần 2
+          </span>
         </div>
 
-        <nav className="space-y-1">
+        <nav className="space-y-2 relative">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const isHovered = hoveredTab === item.id;
+
             return (
-              <button
+              <motion.button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-emerald-800 text-white shadow-sm shadow-emerald-900/20'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                onMouseEnter={() => setHoveredTab(item.id)}
+                onMouseLeave={() => setHoveredTab(null)}
+                whileTap={{ scale: 0.98 }}
+                className={`w-full relative flex items-center justify-between p-3 rounded-2xl text-xs font-bold transition-all text-left outline-none ${
+                  isActive ? 'text-white' : 'text-slate-700 hover:text-slate-900'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <Icon
-                    className={`w-4 h-4 ${
-                      isActive ? 'text-amber-300' : 'text-slate-500 group-hover:text-slate-700'
-                    }`}
+                {/* Active Liquid Background Pill */}
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebar-liquid-pill"
+                    className="absolute inset-0 rounded-2xl neu-emerald z-0"
+                    transition={{
+                      type: 'spring',
+                      stiffness: 350,
+                      damping: 30,
+                    }}
+                  >
+                    <div className="absolute inset-x-3 top-0.5 h-1/3 bg-gradient-to-b from-white/30 to-transparent rounded-t-2xl pointer-events-none" />
+                  </motion.div>
+                )}
+
+                {/* Hover Soft Inset Shadow for non-active items */}
+                {!isActive && isHovered && (
+                  <motion.div
+                    layoutId="sidebar-hover-slot"
+                    className="absolute inset-0 rounded-2xl neu-pressed z-0"
+                    transition={{
+                      type: 'spring',
+                      stiffness: 400,
+                      damping: 32,
+                    }}
                   />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge && (
-                  <span
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                      isActive ? 'bg-amber-400 text-emerald-950 font-bold' : item.badgeColor
+                )}
+
+                {/* Left content: Icon + Title + Description */}
+                <div className="relative z-10 flex items-center gap-3">
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                      isActive
+                        ? 'bg-amber-400 text-emerald-950 font-bold shadow-md'
+                        : isHovered
+                        ? 'neu-convex text-emerald-800'
+                        : 'neu-pressed text-slate-500'
                     }`}
                   >
-                    {item.badge}
-                  </span>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className={`font-bold leading-tight ${isActive ? 'text-white' : 'text-slate-800'}`}>
+                      {item.label}
+                    </div>
+                    <div
+                      className={`text-[10px] mt-0.5 font-normal ${
+                        isActive ? 'text-emerald-100/90' : 'text-slate-400'
+                      }`}
+                    >
+                      {item.desc}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Badge */}
+                {item.badge && (
+                  <div className="relative z-10">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs ${
+                        isActive
+                          ? 'bg-amber-400 text-emerald-950 font-black'
+                          : item.badgeColor
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  </div>
                 )}
-              </button>
+              </motion.button>
             );
           })}
         </nav>
       </div>
 
-      {/* Military unit footer tag */}
-      <div className="p-4 m-3 bg-slate-50 rounded-xl border border-slate-200 flex items-start gap-3">
-        <SchoolLogo size={40} className="ring-1 ring-emerald-600/30 flex-shrink-0 mt-0.5" />
-        <div>
-          <div className="text-xs font-bold text-slate-800">
-            Trường CĐ Hậu cần 2
+      {/* Neumorphic School Brand Card */}
+      <div className="neu-flat rounded-3xl p-4 flex items-center gap-3 relative overflow-hidden group">
+        <SchoolLogo size={46} className="ring-2 ring-emerald-700/30 flex-shrink-0" />
+        <div className="min-w-0">
+          <div className="text-xs font-black text-slate-800 tracking-tight flex items-center gap-1">
+            <span>Trường CĐHC2</span>
+            <span className="text-[10px] font-bold text-amber-600 font-mono">1977</span>
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-            Tổng cục Hậu cần - Kỹ thuật. Hệ thống quản trị nâng lương QNCN.
+          <p className="text-[11px] text-slate-500 mt-0.5 leading-snug truncate">
+            Tổng cục Hậu cần - Kỹ thuật
           </p>
+          <div className="mt-1 text-[10px] font-bold text-emerald-800 flex items-center gap-0.5">
+            <span>Hệ thống Soft-UI 2026</span>
+          </div>
         </div>
       </div>
     </aside>
