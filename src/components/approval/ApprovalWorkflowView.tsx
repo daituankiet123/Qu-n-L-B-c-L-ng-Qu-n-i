@@ -510,6 +510,7 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
         isOpen={showDocModal}
         onClose={() => setShowDocModal(false)}
         cycle={cycle}
+        qncnList={qncnList}
         defaultTab={modalDefaultTab}
         onUpdateCycleDocuments={handleUpdateCycleDocuments}
       />

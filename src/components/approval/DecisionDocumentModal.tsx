@@ -20,14 +20,17 @@ import {
   QuyetDinhTongCucInfo,
   TrichSaoDonViInfo,
   ReviewAllowanceScope,
+  QNCNProfile,
 } from '../../types';
 import { formatVND } from '../../services/salaryCalculator';
 import { SchoolLogo } from '../common/SchoolLogo';
+import { MilitaryPayrollAppendixTable } from './MilitaryPayrollAppendixTable';
 
 interface DecisionDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
   cycle: SalaryReviewCycle;
+  qncnList?: QNCNProfile[];
   defaultTab?: 'totrinh' | 'tongcuc' | 'trichsao';
   onUpdateCycleDocuments?: (
     updatedToTrinh: ToTrinhTongCucInfo,
@@ -41,6 +44,7 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
   isOpen,
   onClose,
   cycle,
+  qncnList = [],
   defaultTab = 'totrinh',
   onUpdateCycleDocuments,
 }) => {
@@ -244,8 +248,8 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-slate-200 overflow-hidden my-4 sm:my-6 flex flex-col max-h-[94vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-6xl xl:max-w-7xl w-full border border-slate-200 overflow-hidden my-3 sm:my-5 flex flex-col max-h-[96vh]">
         {/* Top Control Bar (Hidden when printing) */}
         <div className="no-print bg-slate-900 px-5 py-3 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -675,92 +679,15 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
               </div>
             </div>
 
-            {/* Appendix Table */}
-            <div className="mt-12 pt-6 border-t-2 border-slate-300">
-              <div className="text-center mb-4 space-y-1">
-                <h3 className="text-xs font-bold uppercase text-slate-900">
-                  DANH SÁCH TRÍCH NGANG QUÂN NHÂN CHUYÊN NGHIỆP ĐỀ NGHỊ PHÊ DUYỆT
-                  {allowanceScope === 'Phụ cấp thâm niên nghề' && ' PHỤ CẤP THÂM NIÊN NGHỀ'}
-                  {allowanceScope === 'Phụ cấp thâm niên vượt khung' && ' PHỤ CẤP THÂM NIÊN VƯỢT KHUNG'}
-                  {allowanceScope === 'Nâng bậc lương & Vượt khung' && ' NÂNG BẬC LƯƠNG & VƯỢT KHUNG'}
-                  {allowanceScope === 'Tổng hợp cả 3 chế độ' && ' NÂNG BẬC LƯƠNG, THÂM NIÊN VÀ VƯỢT KHUNG'}
-                </h3>
-                <p className="text-[11px] italic text-slate-600">
-                  (Kèm theo Tờ trình số {toTrinhData.soToTrinh} ngày {toTrinhData.ngayTrinh} của Hiệu trưởng Trường CĐHC2)
-                </p>
-              </div>
-
-              <table className="w-full text-left text-[11px] border-collapse border border-slate-400 font-sans">
-                <thead>
-                  <tr className="bg-slate-100 font-bold text-slate-800 text-center">
-                    <th className="border border-slate-400 p-2">STT</th>
-                    <th className="border border-slate-400 p-2">Họ và tên</th>
-                    <th className="border border-slate-400 p-2">Số hiệu</th>
-                    <th className="border border-slate-400 p-2">Cấp bậc</th>
-                    <th className="border border-slate-400 p-2">Chức vụ - Đơn vị</th>
-                    {allowanceScope !== 'Phụ cấp thâm niên nghề' && (
-                      <>
-                        <th className="border border-slate-400 p-2">Bậc & HS cũ</th>
-                        <th className="border border-slate-400 p-2">Bậc & HS đề xuất</th>
-                      </>
-                    )}
-                    {(allowanceScope === 'Phụ cấp thâm niên nghề' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
-                      <th className="border border-slate-400 p-2">% Thâm niên</th>
-                    )}
-                    {(allowanceScope === 'Phụ cấp thâm niên vượt khung' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
-                      <th className="border border-slate-400 p-2">% Vượt khung</th>
-                    )}
-                    <th className="border border-slate-400 p-2">Ngày hưởng</th>
-                    <th className="border border-slate-400 p-2">Lý do đề xuất</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {approvedList.map((item, idx) => (
-                    <tr key={item.id} className="text-slate-800">
-                      <td className="border border-slate-400 p-2 text-center font-mono">{idx + 1}</td>
-                      <td className="border border-slate-400 p-2 font-bold">{item.hoVaTen}</td>
-                      <td className="border border-slate-400 p-2 font-mono text-center">{item.maQNCN}</td>
-                      <td className="border border-slate-400 p-2 text-center">{item.capBac}</td>
-                      <td className="border border-slate-400 p-2">
-                        {item.chucVu} - {item.donVi}
-                      </td>
-
-                      {allowanceScope !== 'Phụ cấp thâm niên nghề' && (
-                        <>
-                          <td className="border border-slate-400 p-2 text-center">
-                            Bậc {item.bacHienTai} ({item.heSoHienTai.toFixed(2)})
-                          </td>
-                          <td className="border border-slate-400 p-2 text-center font-bold text-blue-900 bg-blue-50/40">
-                            {item.loaiNangLuong === 'Vượt khung'
-                              ? `VK ${item.vuotKhungDeXuat}%`
-                              : `Bậc ${item.bacDeXuat} (${item.heSoDeXuat.toFixed(2)})`}
-                          </td>
-                        </>
-                      )}
-
-                      {(allowanceScope === 'Phụ cấp thâm niên nghề' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
-                        <td className="border border-slate-400 p-2 text-center font-mono font-bold text-emerald-800 bg-emerald-50/40">
-                          24%
-                        </td>
-                      )}
-
-                      {(allowanceScope === 'Phụ cấp thâm niên vượt khung' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
-                        <td className="border border-slate-400 p-2 text-center font-mono font-bold text-purple-900 bg-purple-50/40">
-                          {item.vuotKhungDeXuat > 0 ? `${item.vuotKhungDeXuat}%` : '-'}
-                        </td>
-                      )}
-
-                      <td className="border border-slate-400 p-2 text-center font-mono">
-                        {item.ngayHuongMoi}
-                      </td>
-                      <td className="border border-slate-400 p-2 text-xs">
-                        {item.lyDoDeXuat}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {/* Appendix Table: Official Military Standard with Dual Groups: LƯƠNG HIỆN HƯỞNG & XẾP LƯƠNG MỚI */}
+            <MilitaryPayrollAppendixTable
+              approvedList={approvedList}
+              qncnList={qncnList}
+              documentNumber={toTrinhData.soToTrinh}
+              documentDate={toTrinhData.ngayTrinh}
+              documentType="totrinh"
+              allowanceScope={allowanceScope}
+            />
           </div>
         )}
 
@@ -960,92 +887,15 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
               </div>
             </div>
 
-            {/* Appendix Table */}
-            <div className="mt-12 pt-6 border-t-2 border-slate-300">
-              <div className="text-center mb-4 space-y-1">
-                <h3 className="text-xs font-bold uppercase text-slate-900">
-                  DANH SÁCH QUÂN NHÂN CHUYÊN NGHIỆP TRƯỜNG CAO ĐẲNG HẬU CẦN 2
-                  {allowanceScope === 'Phụ cấp thâm niên nghề' && ' ĐƯỢC NÂNG PHỤ CẤP THÂM NIÊN NGHỀ'}
-                  {allowanceScope === 'Phụ cấp thâm niên vượt khung' && ' ĐƯỢC NÂNG PHỤ CẤP THÂM NIÊN VƯỢT KHUNG'}
-                  {allowanceScope === 'Nâng bậc lương & Vượt khung' && ' ĐƯỢC NÂNG BẬC LƯƠNG & VƯỢT KHUNG'}
-                  {allowanceScope === 'Tổng hợp cả 3 chế độ' && ' ĐƯỢC NÂNG BẬC LƯƠNG, THÂM NIÊN VÀ VƯỢT KHUNG'}
-                </h3>
-                <p className="text-[11px] italic text-slate-600">
-                  (Kèm theo Quyết định số {qdData.soQuyetDinh} của Thủ trưởng Tổng cục Hậu cần)
-                </p>
-              </div>
-
-              <table className="w-full text-left text-[11px] border-collapse border border-slate-400 font-sans">
-                <thead>
-                  <tr className="bg-slate-100 font-bold text-slate-800 text-center">
-                    <th className="border border-slate-400 p-2">STT</th>
-                    <th className="border border-slate-400 p-2">Họ và tên</th>
-                    <th className="border border-slate-400 p-2">Số hiệu</th>
-                    <th className="border border-slate-400 p-2">Cấp bậc</th>
-                    <th className="border border-slate-400 p-2">Chức vụ - Đơn vị</th>
-                    {allowanceScope !== 'Phụ cấp thâm niên nghề' && (
-                      <>
-                        <th className="border border-slate-400 p-2">Bậc & HS cũ</th>
-                        <th className="border border-slate-400 p-2">Bậc & HS mới</th>
-                      </>
-                    )}
-                    {(allowanceScope === 'Phụ cấp thâm niên nghề' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
-                      <th className="border border-slate-400 p-2">% Thâm niên</th>
-                    )}
-                    {(allowanceScope === 'Phụ cấp thâm niên vượt khung' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
-                      <th className="border border-slate-400 p-2">% Vượt khung</th>
-                    )}
-                    <th className="border border-slate-400 p-2">Ngày hưởng</th>
-                    <th className="border border-slate-400 p-2">Hình thức</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {approvedList.map((item, idx) => (
-                    <tr key={item.id} className="text-slate-800">
-                      <td className="border border-slate-400 p-2 text-center font-mono">{idx + 1}</td>
-                      <td className="border border-slate-400 p-2 font-bold">{item.hoVaTen}</td>
-                      <td className="border border-slate-400 p-2 font-mono text-center">{item.maQNCN}</td>
-                      <td className="border border-slate-400 p-2 text-center">{item.capBac}</td>
-                      <td className="border border-slate-400 p-2">
-                        {item.chucVu} - {item.donVi}
-                      </td>
-
-                      {allowanceScope !== 'Phụ cấp thâm niên nghề' && (
-                        <>
-                          <td className="border border-slate-400 p-2 text-center">
-                            Bậc {item.bacHienTai} ({item.heSoHienTai.toFixed(2)})
-                          </td>
-                          <td className="border border-slate-400 p-2 text-center font-bold text-emerald-900">
-                            {item.loaiNangLuong === 'Vượt khung'
-                              ? `VK ${item.vuotKhungDeXuat}%`
-                              : `Bậc ${item.bacDeXuat} (${item.heSoDeXuat.toFixed(2)})`}
-                          </td>
-                        </>
-                      )}
-
-                      {(allowanceScope === 'Phụ cấp thâm niên nghề' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
-                        <td className="border border-slate-400 p-2 text-center font-mono font-semibold">
-                          24%
-                        </td>
-                      )}
-
-                      {(allowanceScope === 'Phụ cấp thâm niên vượt khung' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
-                        <td className="border border-slate-400 p-2 text-center font-mono font-bold text-purple-900">
-                          {item.vuotKhungDeXuat > 0 ? `${item.vuotKhungDeXuat}%` : '-'}
-                        </td>
-                      )}
-
-                      <td className="border border-slate-400 p-2 text-center font-mono">
-                        {item.ngayHuongMoi}
-                      </td>
-                      <td className="border border-slate-400 p-2 text-center">
-                        {item.loaiNangLuong}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {/* Appendix Table: Official Military Standard with Dual Groups: LƯƠNG HIỆN HƯỞNG & XẾP LƯƠNG MỚI */}
+            <MilitaryPayrollAppendixTable
+              approvedList={approvedList}
+              qncnList={qncnList}
+              documentNumber={qdData.soQuyetDinh}
+              documentDate={qdData.ngayKy}
+              documentType="tongcuc"
+              allowanceScope={allowanceScope}
+            />
           </div>
         )}
 
@@ -1255,92 +1105,15 @@ export const DecisionDocumentModal: React.FC<DecisionDocumentModalProps> = ({
               </div>
             </div>
 
-            {/* Appendix Table for Extracted QNCN */}
-            <div className="mt-12 pt-6 border-t-2 border-slate-300">
-              <div className="text-center mb-4 space-y-1">
-                <h3 className="text-xs font-bold uppercase text-slate-900">
-                  DANH SÁCH TRÍCH SAO QUÂN NHÂN CHUYÊN NGHIỆP ĐƯỢC HƯỞNG CHẾ ĐỘ
-                  {allowanceScope === 'Phụ cấp thâm niên nghề' && ' (PHỤ CẤP THÂM NIÊN NGHỀ)'}
-                  {allowanceScope === 'Phụ cấp thâm niên vượt khung' && ' (PHỤ CẤP THÂM NIÊN VƯỢT KHUNG)'}
-                  {allowanceScope === 'Nâng bậc lương & Vượt khung' && ' (NÂNG BẬC LƯƠNG & VƯỢT KHUNG)'}
-                  {allowanceScope === 'Tổng hợp cả 3 chế độ' && ' (NÂNG LƯƠNG, THÂM NIÊN VÀ VƯỢT KHUNG)'}
-                </h3>
-                <p className="text-[11px] italic text-slate-600">
-                  (Kèm theo Bản Trích sao số {tsData.soTrichSao} ngày {tsData.ngaySao} của Hiệu trưởng Trường CĐHC2)
-                </p>
-              </div>
-
-              <table className="w-full text-left text-[11px] border-collapse border border-slate-400 font-sans">
-                <thead>
-                  <tr className="bg-slate-100 font-bold text-slate-800 text-center">
-                    <th className="border border-slate-400 p-2">STT</th>
-                    <th className="border border-slate-400 p-2">Họ và tên</th>
-                    <th className="border border-slate-400 p-2">Số hiệu</th>
-                    <th className="border border-slate-400 p-2">Cấp bậc</th>
-                    <th className="border border-slate-400 p-2">Chức vụ - Đơn vị</th>
-                    {allowanceScope !== 'Phụ cấp thâm niên nghề' && (
-                      <>
-                        <th className="border border-slate-400 p-2">Bậc & HS cũ</th>
-                        <th className="border border-slate-400 p-2">Bậc & HS MỚI</th>
-                      </>
-                    )}
-                    {(allowanceScope === 'Phụ cấp thâm niên nghề' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
-                      <th className="border border-slate-400 p-2">% Thâm niên mới</th>
-                    )}
-                    {(allowanceScope === 'Phụ cấp thâm niên vượt khung' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
-                      <th className="border border-slate-400 p-2">% Vượt khung mới</th>
-                    )}
-                    <th className="border border-slate-400 p-2">Ngày hưởng</th>
-                    <th className="border border-slate-400 p-2">Hình thức</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {approvedList.map((item, idx) => (
-                    <tr key={item.id} className="text-slate-800">
-                      <td className="border border-slate-400 p-2 text-center font-mono">{idx + 1}</td>
-                      <td className="border border-slate-400 p-2 font-bold">{item.hoVaTen}</td>
-                      <td className="border border-slate-400 p-2 font-mono text-center">{item.maQNCN}</td>
-                      <td className="border border-slate-400 p-2 text-center">{item.capBac}</td>
-                      <td className="border border-slate-400 p-2">
-                        {item.chucVu} - {item.donVi}
-                      </td>
-
-                      {allowanceScope !== 'Phụ cấp thâm niên nghề' && (
-                        <>
-                          <td className="border border-slate-400 p-2 text-center">
-                            Bậc {item.bacHienTai} ({item.heSoHienTai.toFixed(2)})
-                          </td>
-                          <td className="border border-slate-400 p-2 text-center font-bold text-emerald-900 bg-emerald-50/50">
-                            {item.loaiNangLuong === 'Vượt khung'
-                              ? `VK ${item.vuotKhungDeXuat}%`
-                              : `Bậc ${item.bacDeXuat} (${item.heSoDeXuat.toFixed(2)})`}
-                          </td>
-                        </>
-                      )}
-
-                      {(allowanceScope === 'Phụ cấp thâm niên nghề' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
-                        <td className="border border-slate-400 p-2 text-center font-mono font-bold text-emerald-800 bg-emerald-50/30">
-                          24%
-                        </td>
-                      )}
-
-                      {(allowanceScope === 'Phụ cấp thâm niên vượt khung' || allowanceScope === 'Tổng hợp cả 3 chế độ') && (
-                        <td className="border border-slate-400 p-2 text-center font-mono font-bold text-purple-900 bg-purple-50/30">
-                          {item.vuotKhungDeXuat > 0 ? `${item.vuotKhungDeXuat}%` : '-'}
-                        </td>
-                      )}
-
-                      <td className="border border-slate-400 p-2 text-center font-mono font-semibold">
-                        {item.ngayHuongMoi}
-                      </td>
-                      <td className="border border-slate-400 p-2 text-center">
-                        {item.loaiNangLuong}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {/* Appendix Table: Official Military Standard with Dual Groups: LƯƠNG HIỆN HƯỞNG & XẾP LƯƠNG MỚI */}
+            <MilitaryPayrollAppendixTable
+              approvedList={approvedList}
+              qncnList={qncnList}
+              documentNumber={tsData.soTrichSao}
+              documentDate={tsData.ngaySao}
+              documentType="trichsao"
+              allowanceScope={allowanceScope}
+            />
           </div>
         )}
       </div>
