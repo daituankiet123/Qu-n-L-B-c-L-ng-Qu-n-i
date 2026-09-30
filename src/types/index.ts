@@ -198,6 +198,75 @@ export interface TrichSaoDonViInfo {
   dieu3Trích?: string;
 }
 
+// Disciplinary Management & Extended Promotion Types
+export interface DisciplineCaseRecord {
+  id: string;
+  qncnId: string;
+  maQNCN: string;
+  hoVaTen: string;
+  donVi: string;
+  capBac: string;
+  chucVu: string;
+  ngach: string;
+  bacHienTai: number;
+  heSoHienTai: number;
+  ngayHuongHienTai: string; // YYYY-MM-DD
+  hinhThucKyLuat: 'Khiển trách' | 'Cảnh cáo' | 'Giáng cấp bậc quân hàm' | 'Hạ bậc lương' | 'Cách chức' | string;
+  soQuyetDinhKyLuat: string;
+  ngayKyLuat: string;
+  coQuanRaQuyetDinh: string;
+  lyDoKyLuat: string;
+  soThangKeoDai: number; // 6 or 12 or custom
+  hanNangLuongBanDau: string; // YYYY-MM-DD
+  hanNangLuongMoi: string; // YYYY-MM-DD
+  trangThaiPheDuyet: 'Chờ xét duyệt' | 'Đã duyệt kéo dài' | 'Từ chối' | 'Đã hoàn thành thời hạn';
+  yKienHoiDong?: string;
+  ghiChu?: string;
+}
+
+export interface DisciplineDecisionInfo {
+  soQuyetDinh: string;
+  ngayKy: string;
+  coQuanCapTren?: string;
+  coQuanTongCuc?: string;
+  tieuDe?: string;
+  canCu?: string[];
+  dieu1?: string;
+  dieu2?: string;
+  dieu3?: string;
+  noiNhan?: string[];
+  chucDanhNguoiKy: string;
+  chucVuNguoiKy?: string;
+  nguoiKy: string;
+  capBacNguoiKy?: string;
+  // Trang 2 Phụ lục ký tên
+  chucDanhNguoiLap?: string;
+  nguoiLap?: string;
+  chucDanhTruongBan?: string;
+  nguoiKyTruongBan?: string;
+  chucDanhHieuTruong?: string;
+  nguoiKyHieuTruong?: string;
+}
+
+export interface DisciplineExtractInfo {
+  soTrichSao: string;
+  ngaySao: string;
+  coQuanCapTren?: string;
+  coQuanTongCuc?: string;
+  coQuanTruong?: string;
+  tieuDe?: string;
+  chungThuc?: string;
+  chucDanhKySao: string;
+  nguoiKySao: string;
+  noiNhanSao?: string[];
+  dieu1Trích?: string;
+  dieu2Trích?: string;
+  dieu3Trích?: string;
+  // Trang 2 Phụ lục ký tên
+  chucDanhKyPhuLuc?: string;
+  nguoiKyPhuLuc?: string;
+}
+
 export type ReviewAllowanceScope =
   | 'Nâng bậc lương & Vượt khung'
   | 'Phụ cấp thâm niên nghề'

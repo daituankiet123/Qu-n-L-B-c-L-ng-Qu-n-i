@@ -10,6 +10,7 @@ import {
   Droplets,
   Sparkles,
   ChevronRight,
+  ShieldAlert,
 } from 'lucide-react';
 import { SchoolLogo } from '../common/SchoolLogo';
 
@@ -18,6 +19,7 @@ export type ActiveTab =
   | 'personnel'
   | 'salary-config'
   | 'review-cycles'
+  | 'discipline'
   | 'approval'
   | 'payroll-sheet';
 
@@ -25,12 +27,14 @@ interface SidebarProps {
   activeTab: ActiveTab;
   onTabChange: (tab: ActiveTab) => void;
   pendingReviewsCount: number;
+  disciplinedCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
   pendingReviewsCount,
+  disciplinedCount = 0,
 }) => {
   const [hoveredTab, setHoveredTab] = useState<ActiveTab | null>(null);
 
@@ -67,6 +71,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       desc: 'Quét niên hạn tự động',
     },
     {
+      id: 'discipline' as ActiveTab,
+      label: 'Xét duyệt Kỷ luật',
+      icon: ShieldAlert,
+      badge: disciplinedCount > 0 ? `${disciplinedCount} đ/c` : null,
+      badgeColor: 'bg-rose-600 text-white font-bold',
+      desc: 'Kéo dài thời hạn nâng lương',
+    },
+    {
       id: 'approval' as ActiveTab,
       label: 'Tổng cục Duyệt & Trích sao',
       icon: FileCheck2,
@@ -84,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-full lg:w-72 flex-shrink-0 flex flex-col justify-between space-y-4">
+    <aside className="w-full lg:w-72 flex-shrink-0 flex flex-col justify-between space-y-4 no-print">
       {/* Neumorphic Navigation Card */}
       <div className="neu-flat rounded-3xl p-4 sm:p-5 space-y-2 relative overflow-hidden">
         {/* Subtle decorative glow */}

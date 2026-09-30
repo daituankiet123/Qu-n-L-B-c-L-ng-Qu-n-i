@@ -13,6 +13,8 @@ import {
 import { formatVND } from '../../services/salaryCalculator';
 import { GeneralSalaryRules } from '../../types';
 import { SchoolLogo } from '../common/SchoolLogo';
+import { PWAInstallButton } from '../common/PWAInstallButton';
+import { Monitor } from 'lucide-react';
 
 interface HeaderProps {
   rules: GeneralSalaryRules;
@@ -21,6 +23,7 @@ interface HeaderProps {
   onResetDefaults: () => void;
   onExportBackup: () => void;
   onImportBackup: () => void;
+  onOpenWindowsModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -30,9 +33,10 @@ export const Header: React.FC<HeaderProps> = ({
   onResetDefaults,
   onExportBackup,
   onImportBackup,
+  onOpenWindowsModal,
 }) => {
   return (
-    <header className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-slate-900 text-white shadow-xl border-b border-emerald-800/80 relative z-20">
+    <header className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-slate-900 text-white shadow-xl border-b border-emerald-800/80 relative z-20 no-print">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between py-3.5 gap-4">
           {/* Logo & School Title */}
@@ -110,6 +114,20 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Tactile System Buttons */}
             <div className="flex items-center gap-1.5 pl-2 border-l border-emerald-800">
+              {/* Windows App & PWA Install Button */}
+              <PWAInstallButton onOpenWindowsModal={onOpenWindowsModal} />
+
+              <motion.button
+                whileHover={{ y: -1.5, scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onOpenWindowsModal}
+                title="Trung tâm cài đặt & hỗ trợ Windows (Phím tắt, Offline, In ấn A4)"
+                className="px-2.5 py-1.5 rounded-xl bg-blue-900/80 hover:bg-blue-800 text-blue-100 hover:text-white transition-all border border-blue-600/50 text-xs font-bold flex items-center gap-1 shadow-sm"
+              >
+                <Monitor className="w-3.5 h-3.5 text-blue-300" />
+                <span className="hidden md:inline">Hỗ trợ Windows</span>
+              </motion.button>
+
               <motion.button
                 whileHover={{ y: -1.5, scale: 1.02 }}
                 whileTap={{ scale: 0.95 }}

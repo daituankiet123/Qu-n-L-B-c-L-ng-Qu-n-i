@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   X,
   User,
@@ -12,10 +12,14 @@ import {
   Briefcase,
   FileText,
   Clock,
+  Printer,
+  FileDown,
 } from 'lucide-react';
 import { QNCNProfile, SalaryScaleConfig, GeneralSalaryRules } from '../../types';
 import { formatVND, calculatePayrollRecord } from '../../services/salaryCalculator';
 import { evaluateQNCNEligibility } from '../../services/salaryProgressionEngine';
+import { exportElementToPdf } from '../../services/pdfExportService';
+import { useToast } from '../../context/ToastContext';
 
 interface PersonnelDetailModalProps {
   isOpen: boolean;
@@ -39,12 +43,56 @@ export const PersonnelDetailModal: React.FC<PersonnelDetailModalProps> = ({
   const todayStr = new Date().toISOString().split('T')[0];
   const evalResult = evaluateQNCNEligibility(profile, scales, rules, todayStr);
   const payroll = calculatePayrollRecord(profile, rules);
+  const toast = useToast();
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+  const handlePrint = () => {
+    toast.info(
+      'Đang gửi lệnh in trích ngang...',
+      'Nếu trình duyệt không mở hộp thoại in, đồng chí hãy bấm nút "Tải PDF" để nhận tệp ngay.',
+      { badge: 'IN HỒ SƠ', duration: 3500 }
+    );
+    try {
+      window.print();
+    } catch (e) {
+      console.warn('Direct print blocked:', e);
+      handleExportProfilePdf();
+    }
+  };
+
+  const handleExportProfilePdf = async () => {
+    setIsExportingPdf(true);
+    toast.info('Đang kết xuất trích ngang PDF...', 'Hệ thống đang chuẩn bị tệp PDF.', {
+      badge: 'TRÍCH NGANG',
+      duration: 2500,
+    });
+    const fileName = `Trich_Ngang_QNCN_${profile.maQNCN}_${profile.hoVaTen.replace(/\s+/g, '_')}.pdf`;
+    try {
+      const success = await exportElementToPdf('personnel-detail-content', {
+        fileName,
+        orientation: 'portrait',
+        title: `TRÍCH LỤC HỒ SƠ QUÂN NHÂN CHUYÊN NGHIỆP - ${profile.hoVaTen}`,
+      });
+      if (success) {
+        toast.success('Đã xuất PDF hồ sơ quân nhân!', `Tệp "${fileName}" đã được tải về máy.`, {
+          badge: 'XUẤT PDF',
+          duration: 4000,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      toast.info('Thông báo in ấn', 'Đang thử mở hộp thoại in của trình duyệt...');
+      window.print();
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full border border-slate-200 overflow-hidden my-8">
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-slate-900 px-6 py-5 text-white flex items-center justify-between">
+        <div className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-slate-900 px-6 py-5 text-white flex items-center justify-between no-print">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center border border-amber-400/30">
               <User className="w-6 h-6" />
@@ -64,16 +112,35 @@ export const PersonnelDetailModal: React.FC<PersonnelDetailModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportProfilePdf}
+              disabled={isExportingPdf}
+              className="px-3 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-600 disabled:opacity-60 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-all active:scale-95"
+              title="Tải trích ngang hồ sơ về máy dưới định dạng PDF"
+            >
+              <FileDown className="w-3.5 h-3.5 text-amber-300" />
+              {isExportingPdf ? 'Đang tạo PDF...' : 'Tải file PDF (.pdf)'}
+            </button>
+            <button
+              onClick={handlePrint}
+              className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-all active:scale-95"
+              title="Mở hộp thoại in ấn trực tiếp"
+            >
+              <Printer className="w-3.5 h-3.5 text-amber-300" />
+              In hồ sơ
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        <div id="personnel-detail-content" className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
           {/* Eligibility status alert box */}
           <div
             className={`p-4 rounded-xl border flex items-start gap-3 ${
@@ -253,6 +320,21 @@ export const PersonnelDetailModal: React.FC<PersonnelDetailModalProps> = ({
             Hồ sơ thuộc quyền quản lý Ban Quân lực - Trường CĐHC2
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={handleExportProfilePdf}
+              disabled={isExportingPdf}
+              className="px-3.5 py-2 rounded-lg bg-rose-700 hover:bg-rose-600 disabled:opacity-60 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+            >
+              <FileDown className="w-3.5 h-3.5 text-amber-300" />
+              {isExportingPdf ? 'Đang tạo PDF...' : 'Tải file PDF (.pdf)'}
+            </button>
+            <button
+              onClick={handlePrint}
+              className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+            >
+              <Printer className="w-3.5 h-3.5 text-amber-300" />
+              In hồ sơ
+            </button>
             <button
               onClick={() => {
                 onClose();

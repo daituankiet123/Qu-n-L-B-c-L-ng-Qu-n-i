@@ -16,12 +16,17 @@ import {
   Building,
   Stamp,
   Edit3,
+  CheckSquare,
+  FileDown,
+  XCircle,
+  Check,
 } from 'lucide-react';
 import {
   SalaryReviewCycle,
   CouncilMember,
   QNCNProfile,
 } from '../../types';
+import { formatVND } from '../../services/salaryCalculator';
 import { DecisionDocumentModal } from './DecisionDocumentModal';
 import { SchoolLogo } from '../common/SchoolLogo';
 
@@ -43,6 +48,11 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
   const [modalDefaultTab, setModalDefaultTab] = useState<'totrinh' | 'tongcuc' | 'trichsao'>('totrinh');
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
 
+  const [candidateFilterTab, setCandidateFilterTab] = useState<
+    'all' | 'eligible' | 'disciplined' | 'approved' | 'pending' | 'rejected'
+  >('all');
+  const [searchCandidate, setSearchCandidate] = useState('');
+
   const cycle = cycles.find((c) => c.id === selectedCycleId) || cycles[0];
 
   if (!cycle) {
@@ -53,9 +63,111 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
     );
   }
 
+  const disciplinedCandidates = cycle.danhSachDeXuat.filter(
+    (i) => i.loaiNangLuong === 'Kéo dài do kỷ luật' || (i.kyLuat && i.kyLuat !== 'Không')
+  );
+  const eligibleCandidates = cycle.danhSachDeXuat.filter(
+    (i) => i.loaiNangLuong === 'Thường xuyên' || i.loaiNangLuong === 'Trước thời hạn' || i.loaiNangLuong === 'Vượt khung'
+  );
+  const disciplinedApprovedCount = disciplinedCandidates.filter(
+    (i) => i.trangThaiPheDuyet === 'Đã duyệt'
+  ).length;
+
   const approvedCount = cycle.danhSachDeXuat.filter((i) => i.trangThaiPheDuyet === 'Đã duyệt').length;
   const rejectedCount = cycle.danhSachDeXuat.filter((i) => i.trangThaiPheDuyet === 'Từ chối').length;
   const pendingCount = cycle.danhSachDeXuat.filter((i) => i.trangThaiPheDuyet === 'Chờ duyệt').length;
+
+  // Filtered candidate list
+  const filteredCandidates = cycle.danhSachDeXuat.filter((item) => {
+    if (searchCandidate.trim()) {
+      const term = searchCandidate.toLowerCase().trim();
+      const match =
+        item.hoVaTen.toLowerCase().includes(term) ||
+        item.maQNCN.toLowerCase().includes(term) ||
+        item.donVi.toLowerCase().includes(term) ||
+        item.capBac.toLowerCase().includes(term);
+      if (!match) return false;
+    }
+    if (candidateFilterTab === 'eligible') {
+      return item.loaiNangLuong === 'Thường xuyên' || item.loaiNangLuong === 'Trước thời hạn' || item.loaiNangLuong === 'Vượt khung';
+    }
+    if (candidateFilterTab === 'disciplined') {
+      return item.loaiNangLuong === 'Kéo dài do kỷ luật' || (item.kyLuat && item.kyLuat !== 'Không');
+    }
+    if (candidateFilterTab === 'approved') {
+      return item.trangThaiPheDuyet === 'Đã duyệt';
+    }
+    if (candidateFilterTab === 'pending') {
+      return item.trangThaiPheDuyet === 'Chờ duyệt';
+    }
+    if (candidateFilterTab === 'rejected') {
+      return item.trangThaiPheDuyet === 'Từ chối';
+    }
+    return true;
+  });
+
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
+
+  const allCandidateIds = filteredCandidates.map((i) => i.id);
+  const isAllCandidatesSelected =
+    allCandidateIds.length > 0 && selectedCandidateIds.length === allCandidateIds.length;
+  const isPartiallyCandidatesSelected =
+    selectedCandidateIds.length > 0 && selectedCandidateIds.length < allCandidateIds.length;
+
+  const handleToggleSelectAllCandidates = () => {
+    if (isAllCandidatesSelected) {
+      setSelectedCandidateIds([]);
+    } else {
+      setSelectedCandidateIds([...allCandidateIds]);
+    }
+  };
+
+  const handleToggleCandidate = (itemId: string) => {
+    setSelectedCandidateIds((prev) =>
+      prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
+    );
+  };
+
+  const handleBatchUpdateCandidatesStatus = (newStatus: 'Đã duyệt' | 'Chờ duyệt' | 'Từ chối') => {
+    if (selectedCandidateIds.length === 0) return;
+    const updatedItems = cycle.danhSachDeXuat.map((item) => {
+      if (selectedCandidateIds.includes(item.id)) {
+        return { ...item, trangThaiPheDuyet: newStatus };
+      }
+      return item;
+    });
+    const updated = { ...cycle, danhSachDeXuat: updatedItems };
+    onSaveCycle(updated);
+  };
+
+  const handleApproveAllInCycle = () => {
+    const updatedItems = cycle.danhSachDeXuat.map((item) => ({
+      ...item,
+      trangThaiPheDuyet: 'Đã duyệt' as const,
+    }));
+    const updated = { ...cycle, danhSachDeXuat: updatedItems };
+    onSaveCycle(updated);
+    setSelectedCandidateIds(allCandidateIds);
+  };
+
+  // Xét duyệt Kỷ luật (Kéo dài thời hạn)
+  const handleApproveDisciplinedCandidates = () => {
+    const updatedItems = cycle.danhSachDeXuat.map((item) => {
+      if (item.loaiNangLuong === 'Kéo dài do kỷ luật' || (item.kyLuat && item.kyLuat !== 'Không')) {
+        return {
+          ...item,
+          trangThaiPheDuyet: 'Đã duyệt' as const,
+          yKienHoiDong:
+            item.yKienHoiDong ||
+            'Hội đồng nhất trí xét nâng bậc lương sau khi đã chấp hành thời gian kéo dài do kỷ luật, đưa vào Quyết định Tổng cục & Bản Trích sao',
+        };
+      }
+      return item;
+    });
+    const updated = { ...cycle, danhSachDeXuat: updatedItems };
+    onSaveCycle(updated);
+    setCandidateFilterTab('disciplined');
+  };
 
   const steps = [
     { label: '1. Đơn vị cơ sở đề xuất', key: 'Đơn vị đề xuất' },
@@ -171,6 +283,15 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
           >
             <Stamp className="w-4 h-4 text-amber-100" />
             3. Bản Trích sao Đơn vị
+          </button>
+
+          <button
+            onClick={() => handleOpenDocModal('totrinh')}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-700 hover:bg-rose-600 text-white font-bold text-xs shadow-md transition-all active:scale-95"
+            title="Xuất văn bản Tờ trình, Quyết định hoặc Trích sao ra định dạng PDF"
+          >
+            <FileDown className="w-4 h-4 text-amber-300" />
+            Xuất PDF Văn Bản
           </button>
         </div>
       </div>
@@ -384,12 +505,20 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
                 <FileText className="w-4 h-4 text-blue-700" />
                 1. Tờ trình gửi Tổng cục phê duyệt
               </h4>
-              <button
-                onClick={() => handleOpenDocModal('totrinh')}
-                className="text-[11px] font-bold text-blue-700 hover:underline flex items-center gap-1"
-              >
-                <Printer className="w-3.5 h-3.5" /> Mở bản in
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleOpenDocModal('totrinh')}
+                  className="text-[11px] font-bold text-blue-700 hover:underline flex items-center gap-1"
+                >
+                  <Printer className="w-3.5 h-3.5" /> Mở bản in
+                </button>
+                <button
+                  onClick={() => handleOpenDocModal('totrinh')}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded border border-rose-200 transition-colors"
+                >
+                  <FileDown className="w-3 h-3" /> Xuất PDF
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2 text-xs">
@@ -419,12 +548,20 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
                 <Building className="w-4 h-4 text-emerald-700" />
                 2. Quyết định Tổng cục Hậu cần
               </h4>
-              <button
-                onClick={() => handleOpenDocModal('tongcuc')}
-                className="text-[11px] font-bold text-emerald-700 hover:underline flex items-center gap-1"
-              >
-                <Printer className="w-3.5 h-3.5" /> Mở bản in
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleOpenDocModal('tongcuc')}
+                  className="text-[11px] font-bold text-emerald-700 hover:underline flex items-center gap-1"
+                >
+                  <Printer className="w-3.5 h-3.5" /> Mở bản in
+                </button>
+                <button
+                  onClick={() => handleOpenDocModal('tongcuc')}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded border border-rose-200 transition-colors"
+                >
+                  <FileDown className="w-3 h-3" /> Xuất PDF
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2 text-xs">
@@ -450,12 +587,20 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
                 <Stamp className="w-4 h-4 text-amber-600" />
                 3. Bản Trích sao Trường CĐHC2
               </h4>
-              <button
-                onClick={() => handleOpenDocModal('trichsao')}
-                className="text-[11px] font-bold text-amber-800 hover:underline flex items-center gap-1"
-              >
-                <Printer className="w-3.5 h-3.5" /> Mở bản in
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleOpenDocModal('trichsao')}
+                  className="text-[11px] font-bold text-amber-800 hover:underline flex items-center gap-1"
+                >
+                  <Printer className="w-3.5 h-3.5" /> Mở bản in
+                </button>
+                <button
+                  onClick={() => handleOpenDocModal('trichsao')}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded border border-rose-200 transition-colors"
+                >
+                  <FileDown className="w-3 h-3" /> Xuất PDF
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2 text-xs">
@@ -488,20 +633,341 @@ export const ApprovalWorkflowView: React.FC<ApprovalWorkflowViewProps> = ({
               Tổng kết hồ sơ đợt này
             </h4>
             <div className="space-y-2 text-xs">
-              <div className="flex justify-between items-center p-2 rounded bg-emerald-50 text-emerald-900">
+              <div
+                onClick={() => setCandidateFilterTab('approved')}
+                className="flex justify-between items-center p-2 rounded bg-emerald-50 text-emerald-900 cursor-pointer hover:bg-emerald-100 transition-colors"
+              >
                 <span>Hồ sơ đủ điều kiện (Đã duyệt):</span>
                 <span className="font-bold font-mono">{approvedCount} đ/c</span>
               </div>
-              <div className="flex justify-between items-center p-2 rounded bg-amber-50 text-amber-900">
+              <div
+                onClick={() => setCandidateFilterTab('disciplined')}
+                className="flex justify-between items-center p-2 rounded bg-amber-50 text-amber-900 border border-amber-200 cursor-pointer hover:bg-amber-100 transition-colors"
+                title="Bấm để xem danh sách hồ sơ kỷ luật kéo dài thời hạn"
+              >
+                <span className="flex items-center gap-1 font-bold text-amber-950">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-700" />
+                  Kỷ luật kéo dài thời hạn:
+                </span>
+                <span className="font-bold font-mono text-amber-900">
+                  {disciplinedCandidates.length} đ/c ({disciplinedApprovedCount} đã duyệt)
+                </span>
+              </div>
+              <div
+                onClick={() => setCandidateFilterTab('pending')}
+                className="flex justify-between items-center p-2 rounded bg-slate-50 text-slate-800 cursor-pointer hover:bg-slate-100 transition-colors"
+              >
                 <span>Hồ sơ chờ xem xét:</span>
                 <span className="font-bold font-mono">{pendingCount} đ/c</span>
               </div>
-              <div className="flex justify-between items-center p-2 rounded bg-rose-50 text-rose-900">
+              <div
+                onClick={() => setCandidateFilterTab('rejected')}
+                className="flex justify-between items-center p-2 rounded bg-rose-50 text-rose-900 cursor-pointer hover:bg-rose-100 transition-colors"
+              >
                 <span>Hồ sơ chưa đạt / Từ chối:</span>
                 <span className="font-bold font-mono">{rejectedCount} đ/c</span>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Personnel in Review Cycle Management Card with Check All & Batch Approval */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <FileCheck2 className="w-4 h-4 text-emerald-700" />
+              Danh Sách Quân Nhân Chuyên Nghiệp Trong Đợt Xét Nâng Lương
+              <span className="text-xs font-normal text-slate-500">
+                ({filteredCandidates.length}/{cycle.danhSachDeXuat.length} quân nhân)
+              </span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Hội đồng thẩm định, tích chọn duyệt hàng loạt để đồng bộ vào Tờ trình, Quyết định và Bản Trích sao
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Nút Xét duyệt Kỷ luật (Kéo dài thời hạn) */}
+            {disciplinedCandidates.length > 0 && (
+              <button
+                type="button"
+                onClick={handleApproveDisciplinedCandidates}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-xs transition-colors"
+                title="Xét duyệt và công nhận tất cả các trường hợp kéo dài thời hạn do kỷ luật vào Quyết định & Bản Trích sao"
+              >
+                <AlertCircle className="w-3.5 h-3.5 text-amber-200" />
+                Xét duyệt Kỷ luật ({disciplinedCandidates.length} đ/c)
+              </button>
+            )}
+
+            {/* Tích chọn tất cả các quân nhân có trong đợt xét */}
+            <button
+              type="button"
+              onClick={handleToggleSelectAllCandidates}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs border ${
+                isAllCandidatesSelected
+                  ? 'bg-emerald-800 text-white border-emerald-900 ring-2 ring-emerald-500/40 hover:bg-emerald-700'
+                  : 'bg-white hover:bg-emerald-50 text-emerald-900 border-emerald-300'
+              }`}
+              title="Tích chọn tất cả các quân nhân hiển thị"
+            >
+              <CheckSquare className={`w-4 h-4 ${isAllCandidatesSelected ? 'text-amber-300' : 'text-emerald-700'}`} />
+              <span>
+                {isAllCandidatesSelected
+                  ? `✓ Đang chọn (${filteredCandidates.length}) - Bỏ chọn`
+                  : `Tích chọn đã lọc (${filteredCandidates.length})`}
+              </span>
+            </button>
+
+            {/* Quick 1-click Approve All in Cycle */}
+            <button
+              type="button"
+              onClick={handleApproveAllInCycle}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs shadow-xs transition-colors"
+              title="Đánh dấu tất cả quân nhân trong đợt là Đã duyệt để đưa vào Tờ trình & Quyết định"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-amber-300" />
+              Duyệt 100% ({cycle.danhSachDeXuat.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Tabs & Search Bar */}
+        <div className="p-3 bg-white border-b border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-2.5 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-slate-500 font-bold mr-1">Bộ lọc:</span>
+            <button
+              type="button"
+              onClick={() => setCandidateFilterTab('all')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                candidateFilterTab === 'all'
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Tất cả ({cycle.danhSachDeXuat.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setCandidateFilterTab('eligible')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                candidateFilterTab === 'eligible'
+                  ? 'bg-emerald-700 text-white'
+                  : 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100'
+              }`}
+            >
+              Đủ điều kiện ({eligibleCandidates.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setCandidateFilterTab('disciplined')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                candidateFilterTab === 'disciplined'
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-300'
+              }`}
+            >
+              <AlertCircle className="w-3 h-3 text-amber-600" />
+              Kỷ luật kéo dài ({disciplinedCandidates.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setCandidateFilterTab('approved')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                candidateFilterTab === 'approved'
+                  ? 'bg-emerald-800 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Đã duyệt ({approvedCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setCandidateFilterTab('pending')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                candidateFilterTab === 'pending'
+                  ? 'bg-amber-700 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Chờ duyệt ({pendingCount})
+            </button>
+          </div>
+
+          <div className="w-full md:w-64">
+            <input
+              type="text"
+              value={searchCandidate}
+              onChange={(e) => setSearchCandidate(e.target.value)}
+              placeholder="Tìm theo họ tên, số hiệu, đơn vị..."
+              className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+        </div>
+
+        {/* Batch actions bar if any selected */}
+        {selectedCandidateIds.length > 0 && (
+          <div className="bg-emerald-950 text-white p-3 px-4 border-b border-emerald-800 flex flex-wrap items-center justify-between gap-3 text-xs animate-fadeIn">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="font-bold text-amber-300">
+                Đã chọn: <strong className="text-white text-sm font-mono">{selectedCandidateIds.length}</strong> / {filteredCandidates.length} quân nhân
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleBatchUpdateCandidatesStatus('Đã duyệt')}
+                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-xs flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-amber-300" />
+                Duyệt tất cả đã chọn ({selectedCandidateIds.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBatchUpdateCandidatesStatus('Chờ duyệt')}
+                className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-all shadow-xs flex items-center gap-1.5"
+              >
+                <Clock className="w-3.5 h-3.5" />
+                Chuyển Chờ duyệt
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBatchUpdateCandidatesStatus('Từ chối')}
+                className="px-3 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-600 text-white font-bold transition-all shadow-xs flex items-center gap-1.5"
+              >
+                <XCircle className="w-3.5 h-3.5" />
+                Từ chối
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCandidateIds([])}
+                className="px-2 py-1 text-slate-400 hover:text-white text-xs"
+              >
+                Bỏ chọn
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+              <tr>
+                <th className="py-2.5 px-3 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    checked={isAllCandidatesSelected}
+                    onChange={handleToggleSelectAllCandidates}
+                    title="Tích chọn tất cả các quân nhân hiển thị"
+                    className="w-4 h-4 rounded text-emerald-700 focus:ring-emerald-500 cursor-pointer"
+                  />
+                </th>
+                <th className="py-2.5 px-3">STT</th>
+                <th className="py-2.5 px-3">Họ và tên / Số hiệu</th>
+                <th className="py-2.5 px-3">Cấp bậc / Đơn vị</th>
+                <th className="py-2.5 px-3">Lương hiện hưởng</th>
+                <th className="py-2.5 px-3">Xếp lương mới</th>
+                <th className="py-2.5 px-3 text-right">Tăng lương</th>
+                <th className="py-2.5 px-3">Phân loại</th>
+                <th className="py-2.5 px-3 text-center">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredCandidates.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="py-8 text-center text-slate-400">
+                    Chưa có hồ sơ nào phù hợp với bộ lọc hiện tại.
+                  </td>
+                </tr>
+              ) : (
+                filteredCandidates.map((item, idx) => {
+                  const isDisciplined = item.loaiNangLuong === 'Kéo dài do kỷ luật' || (item.kyLuat && item.kyLuat !== 'Không');
+                  return (
+                    <tr
+                      key={item.id}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        selectedCandidateIds.includes(item.id)
+                          ? 'bg-emerald-50/60'
+                          : isDisciplined
+                          ? 'bg-amber-50/40'
+                          : ''
+                      }`}
+                    >
+                      <td className="py-3 px-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedCandidateIds.includes(item.id)}
+                          onChange={() => handleToggleCandidate(item.id)}
+                          className="w-4 h-4 rounded text-emerald-700 focus:ring-emerald-500 cursor-pointer"
+                        />
+                      </td>
+                      <td className="py-3 px-3 text-slate-400 font-mono">{idx + 1}</td>
+                      <td className="py-3 px-3">
+                        <div className="font-bold text-slate-900">{item.hoVaTen}</div>
+                        <div className="text-[11px] text-slate-500 font-mono">{item.maQNCN}</div>
+                        {isDisciplined && (
+                          <div className="text-[10px] text-rose-700 font-bold flex items-center gap-1 mt-0.5">
+                            <AlertCircle className="w-3 h-3 text-rose-600" />
+                            <span>Kỷ luật: {item.kyLuat || 'Khiển trách'}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="font-semibold text-emerald-800">{item.capBac}</div>
+                        <div className="text-[11px] text-slate-600">{item.donVi}</div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="font-bold text-slate-800">
+                          Bậc {item.bacHienTai} <span className="font-mono text-slate-600">({item.heSoHienTai.toFixed(2)})</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3">
+                        {item.loaiNangLuong === 'Vượt khung' ? (
+                          <span className="font-bold text-purple-800">VK {item.vuotKhungDeXuat}%</span>
+                        ) : (
+                          <div className="font-bold text-emerald-800">
+                            Bậc {item.bacDeXuat} <span className="font-mono text-emerald-700">({item.heSoDeXuat.toFixed(2)})</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right font-mono font-bold text-emerald-800">
+                        +{formatVND(item.chenhLechTienLuong)}
+                      </td>
+                      <td className="py-3 px-3">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                            isDisciplined
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300 font-bold'
+                              : 'bg-slate-100 text-slate-800'
+                          }`}
+                        >
+                          {item.loaiNangLuong}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                            item.trangThaiPheDuyet === 'Đã duyệt'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : item.trangThaiPheDuyet === 'Từ chối'
+                              ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                              : 'bg-amber-100 text-amber-800 border border-amber-300'
+                          }`}
+                        >
+                          {item.trangThaiPheDuyet === 'Đã duyệt' && <Check className="w-3 h-3 text-emerald-600" />}
+                          {item.trangThaiPheDuyet}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

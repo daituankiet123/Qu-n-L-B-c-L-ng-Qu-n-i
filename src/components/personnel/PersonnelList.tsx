@@ -21,11 +21,15 @@ import {
   ShieldCheck,
   History,
   FileCheck2,
+  Printer,
+  FileText,
+  Calendar,
 } from 'lucide-react';
 import { QNCNProfile, SalaryScaleConfig, GeneralSalaryRules } from '../../types';
 import { formatVND } from '../../services/salaryCalculator';
 import { evaluateQNCNEligibility } from '../../services/salaryProgressionEngine';
 import { exportQNCNToExcel } from '../../services/excelService';
+import { GradeStatisticalReportPdfModal } from '../dashboard/GradeStatisticalReportPdfModal';
 
 interface PersonnelListProps {
   qncnList: QNCNProfile[];
@@ -48,6 +52,64 @@ export type StatusFilterType =
   | 'not-due' // Chưa đủ điều kiện (đang trong niên hạn giữ bậc)
   | 'disciplined'; // Kéo dài do kỷ luật
 
+export function calculateQNCNNextDueDate(
+  profile: QNCNProfile,
+  scales: SalaryScaleConfig[],
+  rules: GeneralSalaryRules
+) {
+  const isSoCap = profile.ngach.includes('Sơ cấp');
+  const standardMonths = isSoCap ? rules.soThangGiuBacSoCap : rules.soThangGiuBacCaoCap;
+
+  let rewardReduction = 0;
+  if (profile.khenThuongGanNhat && profile.khenThuongGanNhat !== 'Không') {
+    if (profile.khenThuongGanNhat.includes('Huân chương') || profile.khenThuongGanNhat.includes('2 năm')) {
+      rewardReduction = 12;
+    } else {
+      rewardReduction = 6;
+    }
+  }
+
+  let disciplineExtension = 0;
+  if (profile.kyLuatGanNhat && profile.kyLuatGanNhat !== 'Không') {
+    if (
+      profile.kyLuatGanNhat.toLowerCase().includes('cảnh cáo') ||
+      profile.kyLuatGanNhat.toLowerCase().includes('giáng')
+    ) {
+      disciplineExtension = 12;
+    } else {
+      disciplineExtension = 6;
+    }
+  }
+
+  const effectiveMonths = Math.max(0, standardMonths - rewardReduction + disciplineExtension);
+  const startDate = new Date(profile.ngayHuongHienTai);
+  if (isNaN(startDate.getTime())) {
+    return {
+      dueYearMonth: '',
+      displayDueDate: '',
+      dueMonthShort: '',
+      effectiveMonths,
+      disciplineExtension,
+      rewardReduction,
+    };
+  }
+
+  const targetDate = new Date(startDate);
+  targetDate.setMonth(targetDate.getMonth() + effectiveMonths);
+  const y = targetDate.getFullYear();
+  const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const d = String(targetDate.getDate()).padStart(2, '0');
+
+  return {
+    dueYearMonth: `${y}-${m}`,
+    displayDueDate: `${d}/${m}/${y}`,
+    dueMonthShort: `Tháng ${m}/${y}`,
+    effectiveMonths,
+    disciplineExtension,
+    rewardReduction,
+  };
+}
+
 export const PersonnelList: React.FC<PersonnelListProps> = ({
   qncnList,
   scales,
@@ -61,7 +123,12 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUnit, setSelectedUnit] = useState<string>('all');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
+  const [selectedStep, setSelectedStep] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilterType>('all');
+  const [dueFromMonth, setDueFromMonth] = useState<string>('');
+  const [dueToMonth, setDueToMonth] = useState<string>('');
+  const [selectedDiscipline, setSelectedDiscipline] = useState<string>('all');
+  const [showGradeReportModal, setShowGradeReportModal] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -103,7 +170,8 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
       const evaluation = evaluateQNCNEligibility(p, scales, rules, todayStr);
       const promoted = isAlreadyPromoted(p);
       const pending = isPendingPromotion(evaluation, p);
-      return { profile: p, evaluation, isPromoted: promoted, isPending: pending };
+      const dueDateInfo = calculateQNCNNextDueDate(p, scales, rules);
+      return { profile: p, evaluation, isPromoted: promoted, isPending: pending, dueDateInfo };
     });
   }, [qncnList, scales, rules, todayStr]);
 
@@ -132,7 +200,7 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
 
   // Filtered list based on search and filters
   const filteredList = useMemo(() => {
-    return evaluatedList.filter(({ profile, evaluation, isPromoted, isPending }) => {
+    return evaluatedList.filter(({ profile, evaluation, isPromoted, isPending, dueDateInfo }) => {
       // 1. Search Bar filter: Match name, military code, unit, rank, position, CCCD, notes
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase().trim();
@@ -162,12 +230,39 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
         return false;
       }
 
-      // 3. Grade filter
+      // 3. Grade filter (Ngạch lương)
       if (selectedGrade !== 'all' && profile.ngach !== selectedGrade) {
         return false;
       }
 
-      // 4. Status filter: đang chờ nâng lương, đã nâng lương, v.v.
+      // 4. Salary Step / Level filter (Bậc lương)
+      if (selectedStep !== 'all') {
+        if (selectedStep === 'vk') {
+          if ((profile.phanTramVuotKhung || 0) <= 0) return false;
+        } else if (profile.bacLuongHienTai !== Number(selectedStep)) {
+          return false;
+        }
+      }
+
+      // 5. Due Month Range filter (Thời gian đến hạn nâng lương trong khoảng từ tháng đến tháng)
+      if (dueFromMonth && dueDateInfo.dueYearMonth) {
+        if (dueDateInfo.dueYearMonth < dueFromMonth) return false;
+      }
+      if (dueToMonth && dueDateInfo.dueYearMonth) {
+        if (dueDateInfo.dueYearMonth > dueToMonth) return false;
+      }
+
+      // 6. Discipline status filter (Trạng thái kỷ luật)
+      if (selectedDiscipline !== 'all') {
+        const hasDiscipline = Boolean(profile.kyLuatGanNhat && profile.kyLuatGanNhat !== 'Không' && profile.kyLuatGanNhat.trim() !== '');
+        if (selectedDiscipline === 'clean' && hasDiscipline) return false;
+        if (selectedDiscipline === 'any-discipline' && !hasDiscipline) return false;
+        if (selectedDiscipline === 'khien-trach' && !profile.kyLuatGanNhat?.toLowerCase().includes('khiển trách')) return false;
+        if (selectedDiscipline === 'canh-cao' && !profile.kyLuatGanNhat?.toLowerCase().includes('cảnh cáo')) return false;
+        if (selectedDiscipline === 'extended' && evaluation.loaiNangLuong !== 'Kéo dài do kỷ luật' && !hasDiscipline) return false;
+      }
+
+      // 7. Status filter: đang chờ nâng lương, đã nâng lương, v.v.
       if (selectedStatus !== 'all') {
         if (selectedStatus === 'pending-promotion' && !isPending) return false;
         if (selectedStatus === 'promoted' && !isPromoted) return false;
@@ -180,7 +275,17 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
 
       return true;
     });
-  }, [evaluatedList, searchTerm, selectedUnit, selectedGrade, selectedStatus]);
+  }, [
+    evaluatedList,
+    searchTerm,
+    selectedUnit,
+    selectedGrade,
+    selectedStep,
+    selectedStatus,
+    dueFromMonth,
+    dueToMonth,
+    selectedDiscipline,
+  ]);
 
   const handleExport = () => {
     exportQNCNToExcel(qncnList);
@@ -190,14 +295,22 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
     setSearchTerm('');
     setSelectedUnit('all');
     setSelectedGrade('all');
+    setSelectedStep('all');
     setSelectedStatus('all');
+    setDueFromMonth('');
+    setDueToMonth('');
+    setSelectedDiscipline('all');
   };
 
   const hasActiveFilters =
     Boolean(searchTerm.trim()) ||
     selectedUnit !== 'all' ||
     selectedGrade !== 'all' ||
-    selectedStatus !== 'all';
+    selectedStep !== 'all' ||
+    selectedStatus !== 'all' ||
+    Boolean(dueFromMonth) ||
+    Boolean(dueToMonth) ||
+    selectedDiscipline !== 'all';
 
   return (
     <div className="space-y-4">
@@ -223,6 +336,16 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
           >
             <Upload className="w-4 h-4 text-amber-300" />
             Import Excel
+          </motion.button>
+
+          <motion.button
+            whileHover={{ y: -2, scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => setShowGradeReportModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl neu-convex text-slate-800 font-bold text-xs transition-all hover:bg-white"
+          >
+            <Printer className="w-4 h-4 text-rose-700" />
+            Báo Cáo Ngạch (PDF)
           </motion.button>
 
           <motion.button
@@ -397,41 +520,40 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
           )}
         </div>
 
-        {/* Dropdown Filters Row: Unit, Grade, Specific Status */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-          {/* Unit Filter */}
+        {/* Multi-Criteria Filter Grid: Unit, Grade, Step, Discipline */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+          {/* 1. Unit Filter */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-600 mb-1">
-              Lọc theo Đơn vị / Khoa / Ban:
+            <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+              <Building className="w-3.5 h-3.5 text-emerald-800" />
+              Đơn vị / Khoa / Ban:
             </label>
-            <div className="relative">
-              <Building className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <select
-                value={selectedUnit}
-                onChange={(e) => setSelectedUnit(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 neu-input rounded-2xl text-xs font-semibold text-slate-800"
-              >
-                <option value="all">-- Tất cả Đơn vị / Khoa / Ban --</option>
-                {units.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={selectedUnit}
+              onChange={(e) => setSelectedUnit(e.target.value)}
+              className="w-full px-3 py-2 neu-input rounded-2xl text-xs font-semibold text-slate-800"
+            >
+              <option value="all">-- Tất cả Đơn vị ({units.length}) --</option>
+              {units.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Grade Filter */}
+          {/* 2. Grade Filter */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-600 mb-1">
-              Lọc theo Ngạch lương Quân nhân:
+            <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-800" />
+              Ngạch lương:
             </label>
             <select
               value={selectedGrade}
               onChange={(e) => setSelectedGrade(e.target.value)}
               className="w-full px-3 py-2 neu-input rounded-2xl text-xs font-semibold text-slate-800"
             >
-              <option value="all">-- Tất cả Ngạch lương --</option>
+              <option value="all">-- Tất cả Ngạch lương ({scales.length}) --</option>
               {scales.map((s) => (
                 <option key={s.id} value={s.ngach}>
                   {s.tenNgach}
@@ -440,29 +562,282 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
             </select>
           </div>
 
-          {/* Detailed Status Filter Dropdown */}
+          {/* 3. Salary Step Filter (Bậc lương) */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-600 mb-1">
-              Phân loại trạng thái chi tiết:
+            <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+              <Award className="w-3.5 h-3.5 text-amber-700" />
+              Bậc lương hiện tại:
             </label>
             <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value as StatusFilterType)}
-              className="w-full px-3 py-2 neu-input rounded-2xl text-xs font-bold text-emerald-950"
+              value={selectedStep}
+              onChange={(e) => setSelectedStep(e.target.value)}
+              className="w-full px-3 py-2 neu-input rounded-2xl text-xs font-semibold text-slate-800"
             >
-              <option value="all">-- Tất cả trạng thái ({counts.all}) --</option>
-              <option value="pending-promotion">⏳ Đang chờ nâng lương ({counts.pending})</option>
-              <option value="due-regular">--- Đến hạn nâng thường xuyên</option>
-              <option value="due-early">--- Đủ điều kiện trước thời hạn (Khen thưởng)</option>
-              <option value="due-vk">--- Đến hạn nâng Phụ cấp vượt khung</option>
-              <option value="promoted">✅ Đã nâng lương gần đây ({counts.promoted})</option>
-              <option value="not-due">⚪ Đang giữ bậc (Chưa đủ điều kiện) ({counts.notDue})</option>
-              {counts.disciplined > 0 && (
-                <option value="disciplined">⚠️ Bị kéo dài do kỷ luật ({counts.disciplined})</option>
-              )}
+              <option value="all">-- Tất cả các Bậc (1 - 12) --</option>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((b) => (
+                <option key={b} value={String(b)}>
+                  Bậc {b}
+                </option>
+              ))}
+              <option value="vk">⭐ Đang hưởng Vượt khung (VK %)</option>
+            </select>
+          </div>
+
+          {/* 4. Discipline Status Filter */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-700" />
+              Tình trạng Kỷ luật:
+            </label>
+            <select
+              value={selectedDiscipline}
+              onChange={(e) => setSelectedDiscipline(e.target.value)}
+              className="w-full px-3 py-2 neu-input rounded-2xl text-xs font-semibold text-slate-800"
+            >
+              <option value="all">-- Tất cả tình trạng kỷ luật --</option>
+              <option value="clean">🟢 Trong sạch (Không có kỷ luật)</option>
+              <option value="any-discipline">⚠️ Có kỷ luật (Khiển trách / Cảnh cáo)</option>
+              <option value="khien-trach">--- Khiển trách</option>
+              <option value="canh-cao">--- Cảnh cáo</option>
+              <option value="extended">⛔ Bị kéo dài thời hạn nâng bậc</option>
             </select>
           </div>
         </div>
+
+        {/* Promotion Due Date Range Filter (Thời hạn nâng bậc trong khoảng) */}
+        <div className="pt-2 border-t border-slate-200/70">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5 flex-shrink-0">
+                <Calendar className="w-3.5 h-3.5 text-emerald-800" />
+                Thời hạn đến hạn nâng lương trong khoảng:
+              </span>
+
+              <div className="inline-flex items-center gap-1.5 bg-slate-100/90 px-2.5 py-1 rounded-xl border border-slate-300">
+                <span className="text-[11px] font-semibold text-slate-600">Từ tháng:</span>
+                <input
+                  type="month"
+                  value={dueFromMonth}
+                  onChange={(e) => setDueFromMonth(e.target.value)}
+                  className="bg-white border border-slate-300 rounded-lg px-2 py-0.5 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-700"
+                />
+                <span className="text-slate-400 font-bold">➔</span>
+                <span className="text-[11px] font-semibold text-slate-600">Đến tháng:</span>
+                <input
+                  type="month"
+                  value={dueToMonth}
+                  onChange={(e) => setDueToMonth(e.target.value)}
+                  className="bg-white border border-slate-300 rounded-lg px-2 py-0.5 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-700"
+                />
+              </div>
+
+              {(dueFromMonth || dueToMonth) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDueFromMonth('');
+                    setDueToMonth('');
+                  }}
+                  className="text-[11px] text-rose-700 hover:text-rose-900 font-bold inline-flex items-center gap-0.5 px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 transition-colors"
+                  title="Xóa khoảng thời gian"
+                >
+                  <X className="w-3 h-3" />
+                  Xóa khoảng ngày
+                </button>
+              )}
+            </div>
+
+            {/* Quick Date Range Shortcuts */}
+            <div className="flex flex-wrap items-center gap-1 text-[11px]">
+              <span className="text-slate-500 font-semibold mr-0.5">Chọn nhanh:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setDueFromMonth('2026-01');
+                  setDueToMonth('2026-03');
+                }}
+                className={`px-2 py-0.5 rounded-lg border font-semibold transition-all ${
+                  dueFromMonth === '2026-01' && dueToMonth === '2026-03'
+                    ? 'bg-emerald-800 text-white border-emerald-900'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-emerald-50'
+                }`}
+              >
+                Quý 1/2026
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDueFromMonth('2026-04');
+                  setDueToMonth('2026-06');
+                }}
+                className={`px-2 py-0.5 rounded-lg border font-semibold transition-all ${
+                  dueFromMonth === '2026-04' && dueToMonth === '2026-06'
+                    ? 'bg-emerald-800 text-white border-emerald-900'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-emerald-50'
+                }`}
+              >
+                Quý 2/2026
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDueFromMonth('2026-01');
+                  setDueToMonth('2026-06');
+                }}
+                className={`px-2 py-0.5 rounded-lg border font-semibold transition-all ${
+                  dueFromMonth === '2026-01' && dueToMonth === '2026-06'
+                    ? 'bg-emerald-800 text-white border-emerald-900'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-emerald-50'
+                }`}
+              >
+                6T đầu 2026
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDueFromMonth('2026-01');
+                  setDueToMonth('2026-12');
+                }}
+                className={`px-2 py-0.5 rounded-lg border font-semibold transition-all ${
+                  dueFromMonth === '2026-01' && dueToMonth === '2026-12'
+                    ? 'bg-emerald-800 text-white border-emerald-900'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-emerald-50'
+                }`}
+              >
+                Năm 2026
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDueFromMonth('2027-01');
+                  setDueToMonth('2027-12');
+                }}
+                className={`px-2 py-0.5 rounded-lg border font-semibold transition-all ${
+                  dueFromMonth === '2027-01' && dueToMonth === '2027-12'
+                    ? 'bg-emerald-800 text-white border-emerald-900'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-emerald-50'
+                }`}
+              >
+                Năm 2027
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Active Filter Chips Bar */}
+        {hasActiveFilters && (
+          <div className="pt-2 border-t border-slate-200/80 flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="text-slate-500 font-bold mr-1">Đang lọc đồng thời:</span>
+
+            {searchTerm.trim() && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold border border-emerald-300">
+                <span>Từ khóa: "{searchTerm}"</span>
+                <button onClick={() => setSearchTerm('')} className="hover:text-rose-700">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedUnit !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 font-bold border border-blue-300">
+                <span>Đơn vị: {selectedUnit}</span>
+                <button onClick={() => setSelectedUnit('all')} className="hover:text-rose-700">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedGrade !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 font-bold border border-purple-300">
+                <span>
+                  Ngạch: {scales.find((s) => s.ngach === selectedGrade)?.tenNgach || selectedGrade}
+                </span>
+                <button onClick={() => setSelectedGrade('all')} className="hover:text-rose-700">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedStep !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold border border-amber-300">
+                <span>{selectedStep === 'vk' ? 'Hưởng Vượt khung' : `Bậc ${selectedStep}`}</span>
+                <button onClick={() => setSelectedStep('all')} className="hover:text-rose-700">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {(dueFromMonth || dueToMonth) && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-900 font-bold border border-teal-300">
+                <Calendar className="w-3 h-3" />
+                <span>
+                  Hạn nâng: {dueFromMonth || '...'} ➔ {dueToMonth || '...'}
+                </span>
+                <button
+                  onClick={() => {
+                    setDueFromMonth('');
+                    setDueToMonth('');
+                  }}
+                  className="hover:text-rose-700"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedDiscipline !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-900 font-bold border border-rose-300">
+                <span>
+                  Kỷ luật:{' '}
+                  {selectedDiscipline === 'clean'
+                    ? 'Trong sạch'
+                    : selectedDiscipline === 'any-discipline'
+                    ? 'Có kỷ luật'
+                    : selectedDiscipline === 'khien-trach'
+                    ? 'Khiển trách'
+                    : selectedDiscipline === 'canh-cao'
+                    ? 'Cảnh cáo'
+                    : 'Kéo dài thời hạn'}
+                </span>
+                <button onClick={() => setSelectedDiscipline('all')} className="hover:text-rose-700">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedStatus !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 font-bold border border-slate-400">
+                <span>
+                  Trạng thái:{' '}
+                  {selectedStatus === 'pending-promotion'
+                    ? 'Đang chờ nâng lương'
+                    : selectedStatus === 'promoted'
+                    ? 'Đã nâng lương'
+                    : selectedStatus === 'due-regular'
+                    ? 'Đến hạn thường xuyên'
+                    : selectedStatus === 'due-early'
+                    ? 'Trước thời hạn'
+                    : selectedStatus === 'due-vk'
+                    ? 'Đến hạn vượt khung'
+                    : selectedStatus === 'not-due'
+                    ? 'Đang giữ bậc'
+                    : 'Kỷ luật kéo dài'}
+                </span>
+                <button onClick={() => setSelectedStatus('all')} className="hover:text-rose-700">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            <button
+              onClick={handleResetFilters}
+              className="ml-auto text-xs font-bold text-rose-700 hover:text-rose-900 hover:underline flex items-center gap-1"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Xóa tất cả bộ lọc ({filteredList.length}/{qncnList.length})
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ========================================================================= */}
@@ -510,7 +885,7 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
                 <th className="py-2.5 px-3">Cấp bậc / Chức vụ</th>
                 <th className="py-2.5 px-3">Đơn vị công tác</th>
                 <th className="py-2.5 px-3">Ngạch & Bậc hiện tại</th>
-                <th className="py-2.5 px-3">Ngày hưởng</th>
+                <th className="py-2.5 px-3">Ngày hưởng / Đến hạn</th>
                 <th className="py-2.5 px-3">Thời gian giữ</th>
                 <th className="py-2.5 px-3">Trạng thái nâng lương</th>
                 <th className="py-2.5 px-3 text-center">Thao tác</th>
@@ -537,7 +912,7 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredList.map(({ profile, evaluation, isPromoted, isPending }, idx) => (
+                filteredList.map(({ profile, evaluation, isPromoted, isPending, dueDateInfo }, idx) => (
                   <tr key={profile.id} className="hover:bg-white/60 transition-colors group">
                     <td className="py-3 px-3 text-slate-400 font-mono font-bold">{idx + 1}</td>
 
@@ -586,9 +961,20 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
                       )}
                     </td>
 
-                    {/* Date received */}
-                    <td className="py-3 px-3 text-slate-600 font-mono font-medium">
-                      {profile.ngayHuongHienTai}
+                    {/* Date received & Next due date */}
+                    <td className="py-3 px-3">
+                      <div className="text-slate-800 font-mono font-bold text-xs">
+                        {profile.ngayHuongHienTai}
+                      </div>
+                      {dueDateInfo?.displayDueDate && (
+                        <div
+                          className="text-[10px] text-emerald-800 font-mono font-bold flex items-center gap-1 mt-0.5"
+                          title="Thời hạn đến hạn nâng lương kế tiếp"
+                        >
+                          <Calendar className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                          <span>Hạn: {dueDateInfo.displayDueDate}</span>
+                        </div>
+                      )}
                     </td>
 
                     {/* Elapsed months */}
@@ -695,6 +1081,15 @@ export const PersonnelList: React.FC<PersonnelListProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Grade Statistical Report PDF Modal */}
+      <GradeStatisticalReportPdfModal
+        isOpen={showGradeReportModal}
+        onClose={() => setShowGradeReportModal(false)}
+        qncnList={qncnList}
+        scales={scales}
+        rules={rules}
+      />
     </div>
   );
 };

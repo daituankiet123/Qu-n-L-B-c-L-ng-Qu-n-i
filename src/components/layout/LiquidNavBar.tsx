@@ -9,6 +9,7 @@ import {
   Receipt,
   Sparkles,
   Droplet,
+  ShieldAlert,
 } from 'lucide-react';
 import { ActiveTab } from './Sidebar';
 
@@ -16,12 +17,14 @@ interface LiquidNavBarProps {
   activeTab: ActiveTab;
   onTabChange: (tab: ActiveTab) => void;
   pendingReviewsCount: number;
+  disciplinedCount?: number;
 }
 
 export const LiquidNavBar: React.FC<LiquidNavBarProps> = ({
   activeTab,
   onTabChange,
   pendingReviewsCount,
+  disciplinedCount = 0,
 }) => {
   const [hoveredTab, setHoveredTab] = useState<ActiveTab | null>(null);
 
@@ -51,6 +54,13 @@ export const LiquidNavBar: React.FC<LiquidNavBarProps> = ({
       badge: pendingReviewsCount > 0 ? `${pendingReviewsCount}` : null,
     },
     {
+      id: 'discipline' as ActiveTab,
+      label: 'Xét Kỷ luật',
+      icon: ShieldAlert,
+      badge: disciplinedCount > 0 ? `${disciplinedCount}` : null,
+      badgeColor: 'bg-rose-600 text-white',
+    },
+    {
       id: 'approval' as ActiveTab,
       label: 'Tổng cục & Trích sao',
       icon: FileCheck2,
@@ -65,7 +75,7 @@ export const LiquidNavBar: React.FC<LiquidNavBarProps> = ({
   ];
 
   return (
-    <div className="w-full relative py-1">
+    <div className="w-full relative py-1 no-print">
       {/* Liquid Floating Dock Container */}
       <div className="neu-flat rounded-2xl sm:rounded-full p-1.5 sm:p-2 flex items-center justify-between sm:justify-start gap-1 overflow-x-auto relative">
         {navItems.map((item) => {

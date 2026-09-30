@@ -126,16 +126,32 @@
   background: #64748b;
 }
 
+/* Administrative Document 2-Column Tables (Never collapse) */
+table.admin-doc-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  border: none !important;
+  margin: 0 !important;
+}
+table.admin-doc-table td {
+  border: none !important;
+  padding: 0 !important;
+  vertical-align: top !important;
+}
+
 /* Print Optimization */
 @media print {
   @page {
-    size: landscape;
+    size: auto;
     margin: 8mm 10mm;
   }
-  body {
+  html, body {
     background: #ffffff !important;
     color: #000000 !important;
-    font-size: 9pt;
+    font-family: 'Times New Roman', Times, serif !important;
+    font-size: 8.5pt !important;
+    height: auto !important;
+    overflow: visible !important;
   }
   .no-print {
     display: none !important;
@@ -143,18 +159,83 @@
   .print-only {
     display: block !important;
   }
+  .appendix-table-section,
+  .break-before-page,
+  .page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+    margin-top: 12px !important;
+  }
+  .approval-box,
+  .approval-section {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #000000 !important;
+    padding: 0 !important;
+  }
+  .overflow-x-auto,
+  .overflow-y-auto,
+  .overflow-hidden {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+  /* Ensure modals print cleanly with no backdrops or overflow clipping */
+  .fixed.inset-0,
+  .fixed,
+  .no-print-backdrop {
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    display: block !important;
+  }
+  .max-w-5xl, .max-w-6xl, .max-w-7xl, .max-w-xl, .max-w-3xl, .max-w-lg, [class*="max-w-"] {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+  }
+  /* Signatures must NEVER be split or covered */
+  .signature-block,
+  .admin-doc-table,
+  .break-inside-avoid,
+  .avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
   table {
     page-break-inside: auto;
     width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8pt !important;
+  }
+  table:not(.admin-doc-table) th, table:not(.admin-doc-table) td {
+    border: 1px solid #000000 !important;
+    padding: 2.5px 4px !important;
+  }
+  /* Administrative Document Layout Tables (No Borders in Print) */
+  table.admin-doc-table,
+  table.admin-doc-table tr,
+  table.admin-doc-table td,
+  table.admin-doc-table th {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
   }
   tr {
     page-break-inside: avoid;
     page-break-after: auto;
   }
   thead {
-    display: table-header-group;
+    display: table-header-group !important;
   }
   tfoot {
-    display: table-footer-group;
+    display: table-footer-group !important;
   }
 }

@@ -11,9 +11,12 @@ import { PersonnelFormModal } from './components/personnel/PersonnelFormModal';
 import { SalaryConfigView } from './components/salary-config/SalaryConfigView';
 import { ReviewCycleManager } from './components/review-cycles/ReviewCycleManager';
 import { ApprovalWorkflowView } from './components/approval/ApprovalWorkflowView';
+import { DisciplineReviewManager } from './components/discipline/DisciplineReviewManager';
 import { PayrollSheetView } from './components/payroll-sheet/PayrollSheetView';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { ToastContainer } from './components/common/ToastContainer';
+import { WindowsAppModal } from './components/common/WindowsAppModal';
+import { OfflineIndicator } from './components/common/OfflineIndicator';
 import { storageService } from './services/storageService';
 import {
   QNCNProfile,
@@ -21,6 +24,9 @@ import {
   GeneralSalaryRules,
   SalaryReviewCycle,
   AuditLogEntry,
+  DisciplineCaseRecord,
+  DisciplineDecisionInfo,
+  DisciplineExtractInfo,
 } from './types';
 import { evaluateQNCNEligibility } from './services/salaryProgressionEngine';
 
@@ -36,15 +42,44 @@ const MainApp: React.FC = () => {
     storageService.getReviewCycles()
   );
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => storageService.getAuditLogs());
+  const [disciplineCases, setDisciplineCases] = useState<DisciplineCaseRecord[]>(() =>
+    storageService.getDisciplineCases()
+  );
+  const [disciplineDecision, setDisciplineDecision] = useState<DisciplineDecisionInfo>(() =>
+    storageService.getDisciplineDecision()
+  );
+  const [disciplineExtract, setDisciplineExtract] = useState<DisciplineExtractInfo>(() =>
+    storageService.getDisciplineExtract()
+  );
 
   // Modals
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formProfileToEdit, setFormProfileToEdit] = useState<QNCNProfile | null>(null);
   const [detailProfile, setDetailProfile] = useState<QNCNProfile | null>(null);
+  const [isWindowsModalOpen, setIsWindowsModalOpen] = useState(false);
 
   // Hidden JSON backup input
   const backupInputRef = useRef<HTMLInputElement>(null);
+
+  // Windows Keyboard Shortcuts (Ctrl+S for backup, Ctrl+Shift+W for Windows modal)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl + S: Fast JSON Backup
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleExportBackup();
+      }
+      // Ctrl + Shift + W: Windows Help Center
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'w') {
+        e.preventDefault();
+        setIsWindowsModalOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [qncnList, scales, rules, reviewCycles, auditLogs, disciplineCases]);
 
   // Sync to localStorage
   useEffect(() => {
@@ -66,6 +101,18 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     storageService.saveAuditLogs(auditLogs);
   }, [auditLogs]);
+
+  useEffect(() => {
+    storageService.saveDisciplineCases(disciplineCases);
+  }, [disciplineCases]);
+
+  useEffect(() => {
+    storageService.saveDisciplineDecision(disciplineDecision);
+  }, [disciplineDecision]);
+
+  useEffect(() => {
+    storageService.saveDisciplineExtract(disciplineExtract);
+  }, [disciplineExtract]);
 
   // Count due for review currently
   const todayStr = new Date().toISOString().split('T')[0];
@@ -317,6 +364,9 @@ const MainApp: React.FC = () => {
       setRules(storageService.getSalaryRules());
       setReviewCycles(storageService.getReviewCycles());
       setAuditLogs(storageService.getAuditLogs());
+      setDisciplineCases(storageService.getDisciplineCases());
+      setDisciplineDecision(storageService.getDisciplineDecision());
+      setDisciplineExtract(storageService.getDisciplineExtract());
 
       toast.info(
         'Khôi phục dữ liệu gốc thành công!',
@@ -374,6 +424,9 @@ const MainApp: React.FC = () => {
         setRules(storageService.getSalaryRules());
         setReviewCycles(storageService.getReviewCycles());
         setAuditLogs(storageService.getAuditLogs());
+        setDisciplineCases(storageService.getDisciplineCases());
+        setDisciplineDecision(storageService.getDisciplineDecision());
+        setDisciplineExtract(storageService.getDisciplineExtract());
 
         const newLog = storageService.addAuditLog({
           nguoiThucHien: 'Quản trị hệ thống',
@@ -444,6 +497,7 @@ const MainApp: React.FC = () => {
         onResetDefaults={handleResetDefaults}
         onExportBackup={handleExportBackup}
         onImportBackup={handleImportBackup}
+        onOpenWindowsModal={() => setIsWindowsModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -453,6 +507,7 @@ const MainApp: React.FC = () => {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           pendingReviewsCount={dueCount}
+          disciplinedCount={disciplineCases.length}
         />
 
         {/* Dynamic Content Views with Liquid Navigation & Fluid Page Transitions */}
@@ -462,6 +517,7 @@ const MainApp: React.FC = () => {
             activeTab={activeTab}
             onTabChange={setActiveTab}
             pendingReviewsCount={dueCount}
+            disciplinedCount={disciplineCases.length}
           />
 
           {/* Fluid Tab Content with Spring Motion Transitions */}
@@ -484,6 +540,7 @@ const MainApp: React.FC = () => {
                   rules={rules}
                   reviewCycles={reviewCycles}
                   auditLogs={auditLogs}
+                  disciplineCases={disciplineCases}
                   onClearAuditLogs={handleClearAuditLogs}
                   onRefreshAuditLogs={handleRefreshAuditLogs}
                   onAddManualAuditLog={handleAddManualAuditLog}
@@ -529,6 +586,22 @@ const MainApp: React.FC = () => {
                   onSaveCycles={setReviewCycles}
                   onSelectCycle={() => {}}
                   onNavigateToApproval={() => setActiveTab('approval')}
+                />
+              )}
+
+              {activeTab === 'discipline' && (
+                <DisciplineReviewManager
+                  cases={disciplineCases}
+                  decisionData={disciplineDecision}
+                  extractData={disciplineExtract}
+                  qncnList={qncnList}
+                  scales={scales}
+                  rules={rules}
+                  onSaveCases={setDisciplineCases}
+                  onSaveDocuments={(dec, ext) => {
+                    setDisciplineDecision(dec);
+                    setDisciplineExtract(ext);
+                  }}
                 />
               )}
 
@@ -581,6 +654,17 @@ const MainApp: React.FC = () => {
           setIsFormModalOpen(true);
         }}
       />
+
+      {/* Windows & Offline Center Modal */}
+      <WindowsAppModal
+        isOpen={isWindowsModalOpen}
+        onClose={() => setIsWindowsModalOpen(false)}
+        onExportBackup={handleExportBackup}
+        onImportBackup={handleImportBackup}
+      />
+
+      {/* Connectivity & Offline Status Indicator */}
+      <OfflineIndicator />
 
       {/* Real-time Toast Notifications Container */}
       <ToastContainer />
